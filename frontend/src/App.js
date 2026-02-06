@@ -314,13 +314,19 @@ function App() {
   const buttonHover = isPaidMode ? 'rgb(120, 120, 74)' : '#0d9488';
   const secondaryColor = isPaidMode ? '#312e81' : '#134e4a';
 
-  // Strict login gating: config missing -> message; loading -> spinner; no user -> login; else generator
+  // Hard gate: never render generator unless Supabase is configured and user is authenticated.
+  const isProductionRender = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
   if (!isSupabaseConfigured) {
     return (
       <ThemeProvider theme={createTheme({ palette: { mode: 'dark' } })}>
         <Container maxWidth="sm" sx={{ py: 4, textAlign: 'center' }}>
+          {isProductionRender && (
+            <Typography color="error" sx={{ mb: 2, fontWeight: 600 }}>
+              Production: Supabase not configured. Generator is blocked.
+            </Typography>
+          )}
           <Typography color="text.secondary">
-            Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in frontend/.env to enable login.
+            Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in Render environment and rebuild.
           </Typography>
         </Container>
       </ThemeProvider>

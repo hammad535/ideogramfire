@@ -58,6 +58,24 @@ The app will be available at [http://localhost:3000](http://localhost:3000)
 
 ---
 
+## Deploying to Render
+
+**Environment variables must be set in the Render dashboard.** Create React App bakes `REACT_APP_*` into the frontend at **build time**.
+
+**Frontend (Render Static Site):**
+- `REACT_APP_SUPABASE_URL` — Supabase project URL
+- `REACT_APP_SUPABASE_ANON_KEY` — Supabase anon (publishable) key  
+- If these are missing at build time, the app will show a blocking screen and the generator will not be accessible.
+
+**Backend (Render Web Service):**
+- `SUPABASE_URL` — Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (backend only)
+- `OPENAI_API_KEY` — OpenAI API key
+- `IDEOGRAM_API_KEY` — Ideogram API key  
+- Optional: `FRONTEND_ORIGIN`, `SERVE_FRONTEND`, `NODE_ENV=production`
+
+---
+
 ## Project Structure
 
 ```
