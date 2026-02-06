@@ -429,8 +429,9 @@ exports.processImageAndPrompt = async (req, res) => {
         statusCode = 429; // Too Many Requests
       }
       
-      return res.status(statusCode).json({ 
+      return res.status(statusCode).json({
         error: errorMessage,
+        request_id,
         details: err?.response?.data || err.message,
         type: err.response?.status === 429 ? 'quota_exceeded' : 'api_error'
       });
@@ -510,9 +511,17 @@ exports.processImageAndPrompt = async (req, res) => {
     const route = req.originalUrl?.split('?')[0] || req.path || '/api/process';
     console.log(`[${finalTimestamp}] Successfully processed request user_id=${req.user?.id} route=${route}. Returning ${images.length} images.`);
 
-    // Always JSON; never send binary or stream. Frontend expects { request_id, images, count }.
-    res.set('Content-Type', 'application/json');
-    res.json({ request_id, images, count: images.length });
+    // Single success path: always JSON; never binary/stream. Guard against double-send.
+    if (res.headersSent) {
+      console.error('BUG: response already sent');
+      return;
+    }
+    return res.status(200).json({
+      request_id,
+      images,
+      count: images.length,
+      mode: creativeMode
+    });
   } catch (err) {
     const errorTimestamp = new Date().toISOString();
     const requestDuration = Date.now() - requestStartTime;
@@ -522,7 +531,8 @@ exports.processImageAndPrompt = async (req, res) => {
     console.error(`[${errorTimestamp}] Internal server error:`, err.message);
     console.error(`[${errorTimestamp}] Error Stack:`, err.stack);
     console.error(`[${errorTimestamp}] Request Duration: ${requestDuration}ms`);
-    res.status(500).json({ error: 'Internal server error.', request_id: errRequestId });
+    if (res.headersSent) console.error('BUG: response already sent');
+    else res.status(500).json({ error: 'Internal server error.', request_id: errRequestId });
   }
 };
 
