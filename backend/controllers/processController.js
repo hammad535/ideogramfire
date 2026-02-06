@@ -463,17 +463,8 @@ exports.processImageAndPrompt = async (req, res) => {
       console.log(`[${new Date().toISOString()}]   - Average Time per Request: ${(ideogramDuration / prompts.length).toFixed(0)}ms`);
       console.log(`[${new Date().toISOString()}]   - Results Array Length: ${results.length}`);
       
-      // Build structured list: each item has id, url (never binary), and prompt
-      const imageList = [];
-      results.forEach((urls, i) => {
-        const promptText = prompts[i] || '';
-        (urls || []).forEach((url, j) => {
-          if (typeof url === 'string' && url) {
-            imageList.push({ id: `img-${i}-${j}`, url, prompt: promptText });
-          }
-        });
-      });
-      images = imageList;
+      // Backward compatible: images = array of URL strings (same as old controller)
+      images = results.flat().filter((url) => typeof url === 'string' && url);
       console.log(`[${new Date().toISOString()}] Flattened images array`);
       console.log(`[${new Date().toISOString()}]   - Total Images Generated: ${images.length}`);
       console.log(`[${new Date().toISOString()}]   - Images per Prompt (avg): ${(images.length / prompts.length).toFixed(2)}`);
@@ -509,19 +500,14 @@ exports.processImageAndPrompt = async (req, res) => {
       success: true
     });
     const route = req.originalUrl?.split('?')[0] || req.path || '/api/process';
-    console.log(`[${finalTimestamp}] Successfully processed request user_id=${req.user?.id} route=${route}. Returning ${images.length} images.`);
+    console.log(`[${finalTimestamp}] Successfully processed request request_id=${request_id} user_id=${req.user?.id} route=${route}. Returning ${images.length} images.`);
 
-    // Exactly one success path: JSON only; no binary/stream.
+    // Success: backward-compatible shape { images, prompts } (images = URL strings, prompts = 20 prompts).
     if (res.headersSent) {
       console.error('BUG: headers already sent');
       return;
     }
-    return res.status(200).json({
-      request_id,
-      images,
-      count: images.length,
-      mode: creativeMode
-    });
+    return res.status(200).json({ images, prompts });
   } catch (err) {
     const errorTimestamp = new Date().toISOString();
     const requestDuration = Date.now() - requestStartTime;
