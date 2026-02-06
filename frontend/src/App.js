@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { getAuthHeaders } from './authHeaders';
 import AuthScreen from './AuthScreen';
 
 function App() {
@@ -60,11 +61,6 @@ function App() {
     setUser(null);
   };
 
-  const getAuthHeaders = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
-  };
-
   if (!isSupabaseConfigured) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
@@ -86,10 +82,10 @@ function App() {
     return <AuthScreen />;
   }
 
-  return <MainApp onLogout={handleLogout} />;
+  return <MainApp onLogout={handleLogout} getAuthHeaders={getAuthHeaders} />;
 }
 
-function MainApp({ onLogout }) {
+function MainApp({ onLogout, getAuthHeaders }) {
   const [creativeMode, setCreativeMode] = useState('paid');
   const [image, setImage] = useState(null);
   const [vertical, setVertical] = useState('');
