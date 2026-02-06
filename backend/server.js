@@ -26,6 +26,7 @@ if (!OPENAI_API_KEY || !IDEOGRAM_API_KEY) {
 } else {
   console.log(`[${startupTimestamp}] ✓ All API keys loaded successfully`);
 }
+console.log(`[${startupTimestamp}]   - SERVE_FRONTEND: ${process.env.SERVE_FRONTEND === 'true' ? 'true (serving frontend/build)' : 'false (API-only)'}`);
 console.log(`[${startupTimestamp}] ===========================================`);
 
 const app = express();
@@ -59,18 +60,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static frontend
-app.use(express.static(path.join(__dirname, '../frontend/build')));
+// Serve frontend only when SERVE_FRONTEND=true (e.g. local dev). On Render, use SERVE_FRONTEND=false for API-only.
+const serveFrontend = process.env.SERVE_FRONTEND === 'true';
+if (serveFrontend) {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+}
 
-// API routes
+// API routes (always mounted)
 const apiRouter = require('./routes/api');
 app.use('/api', apiRouter);
 
-// Fallback to frontend for any other route
-app.get('*', (req, res) => {
-  console.log(`[${new Date().toISOString()}] Serving frontend for ${req.url}`);
-  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-});
+// Fallback: serve frontend SPA or API-only JSON
+if (serveFrontend) {
+  app.get('*', (req, res) => {
+    console.log(`[${new Date().toISOString()}] Serving frontend for ${req.url}`);
+    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+  });
+} else {
+  app.get('*', (req, res) => {
+    res.json({ status: 'ok', service: 'backend', hint: 'use /api/*' });
+  });
+}
 
 // Error handler: log full error server-side only; return safe JSON (no stack/secrets)
 app.use((err, req, res, next) => {
