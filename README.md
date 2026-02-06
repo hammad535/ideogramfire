@@ -60,19 +60,30 @@ The app will be available at [http://localhost:3000](http://localhost:3000)
 
 ## Deploying to Render
 
-**Environment variables must be set in the Render dashboard.** Create React App bakes `REACT_APP_*` into the frontend at **build time**.
+Set environment variables in the Render dashboard. **Create React App bakes `REACT_APP_*` at build time** — they must be set before building the Static Site.
 
-**Frontend (Render Static Site):**
-- `REACT_APP_SUPABASE_URL` — Supabase project URL
-- `REACT_APP_SUPABASE_ANON_KEY` — Supabase anon (publishable) key  
-- If these are missing at build time, the app will show a blocking screen and the generator will not be accessible.
+### Static Site (frontend) — build-time env vars
 
-**Backend (Render Web Service):**
-- `SUPABASE_URL` — Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (backend only)
-- `OPENAI_API_KEY` — OpenAI API key
-- `IDEOGRAM_API_KEY` — Ideogram API key  
-- Optional: `FRONTEND_ORIGIN`, `SERVE_FRONTEND`, `NODE_ENV=production`
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `REACT_APP_SUPABASE_URL` | Yes | Supabase project URL |
+| `REACT_APP_SUPABASE_ANON_KEY` | Yes | Supabase anon (publishable) key; never use service role in frontend |
+| `REACT_APP_API_BASE_URL` | Yes on Render | Backend Web Service URL (e.g. `https://your-backend.onrender.com`) so the static site can call the API |
+
+If `REACT_APP_SUPABASE_URL` or `REACT_APP_SUPABASE_ANON_KEY` are missing at build time, the app shows a blocking "Supabase not configured" screen and the generator is not accessible.
+
+### Web Service (backend) — runtime env vars
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | Yes | OpenAI API key |
+| `IDEOGRAM_API_KEY` | Yes | Ideogram API key |
+| `SUPABASE_URL` | Yes | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (backend only; never in frontend) |
+| `FRONTEND_ORIGIN` | Yes in prod | Static site origin for CORS (e.g. `https://your-frontend.onrender.com`) |
+| `NODE_ENV` | Recommended | Set to `production` for production |
+
+Backend listens on `process.env.PORT` (set by Render).
 
 ---
 

@@ -43,14 +43,11 @@ console.log(`[${startupTimestamp}] ===========================================`)
 
 const app = express();
 
-// CORS: production = frontend URL only; development = localhost. No-origin (Postman/curl) allowed.
+// CORS: NODE_ENV separates dev/prod. Normalize origin (no trailing slash). Allow OPTIONS preflight.
 function normalizeOrigin(origin) {
   if (!origin || typeof origin !== 'string') return null;
   return origin.replace(/\/+$/, '');
 }
-const productionAllowedOrigins = new Set(['https://ideogramfire.onrender.com']);
-if (FRONTEND_ORIGIN) productionAllowedOrigins.add(normalizeOrigin(FRONTEND_ORIGIN));
-
 const devOrigins = new Set([
   'http://localhost:3000',
   'http://localhost:3001',
@@ -61,7 +58,8 @@ const devOrigins = new Set([
   'http://127.0.0.1:3002',
   'http://127.0.0.1:5173',
 ]);
-if (FRONTEND_ORIGIN) devOrigins.add(normalizeOrigin(FRONTEND_ORIGIN));
+const productionAllowedOrigins = new Set();
+if (FRONTEND_ORIGIN) productionAllowedOrigins.add(normalizeOrigin(FRONTEND_ORIGIN));
 
 app.use(cors({
   origin: (origin, cb) => {
