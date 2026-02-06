@@ -48,7 +48,9 @@ function normalizeOrigin(origin) {
   if (!origin || typeof origin !== 'string') return null;
   return origin.replace(/\/+$/, '');
 }
-const productionAllowedOrigin = 'https://ideogramfire.onrender.com';
+const productionAllowedOrigins = new Set(['https://ideogramfire.onrender.com']);
+if (FRONTEND_ORIGIN) productionAllowedOrigins.add(normalizeOrigin(FRONTEND_ORIGIN));
+
 const devOrigins = new Set([
   'http://localhost:3000',
   'http://localhost:3001',
@@ -66,7 +68,7 @@ app.use(cors({
     if (!origin) return cb(null, true); // Postman, curl, same-origin
     const normalized = normalizeOrigin(origin);
     if (isProduction) {
-      if (normalized === productionAllowedOrigin) return cb(null, true);
+      if (productionAllowedOrigins.has(normalized)) return cb(null, true);
       console.error(`[CORS] Blocked origin (production): ${origin}`);
       return cb(new Error('Not allowed by CORS'));
     }

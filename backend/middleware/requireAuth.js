@@ -6,6 +6,11 @@ function generateRequestId() {
 }
 
 async function requireAuth(req, res, next) {
+  // CORS preflight never sends Authorization; let it through so CORS middleware can respond
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   const request_id = req.headers['x-request-id'] || generateRequestId();
 
   if (!supabaseAdmin) {

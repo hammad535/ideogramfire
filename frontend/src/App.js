@@ -35,15 +35,20 @@ function App() {
   const [error, setError] = useState('');
   const [results, setResults] = useState([]);
 
-  // Auth: on mount get session, then subscribe to changes. Strict gate: no user = login screen.
+  // Auth: on mount get session, then subscribe to changes. Strict gate: no user = login screen only.
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       setAuthLoading(false);
+      setUser(null);
       return;
     }
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+      } catch {
+        setUser(null);
+      }
       setAuthLoading(false);
     })();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
