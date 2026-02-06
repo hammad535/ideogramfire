@@ -7,6 +7,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.7",
+    "@supabase/supabase-js": "^2.95.2",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
     "react": "^18.2.0",
@@ -20,15 +21,7 @@
     "eject": "react-scripts eject"
   },
   "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
   }
 }
