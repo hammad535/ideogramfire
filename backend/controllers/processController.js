@@ -334,12 +334,11 @@ async function callIdeogram(prompt, promptIndex = null) {
   return imageUrls;
 }
 
-// Controller: /api/process and /api/generate – always respond with JSON only (no binary/stream).
+// Controller
 exports.processImageAndPrompt = async (req, res) => {
   const requestStartTime = Date.now();
   const requestTimestamp = new Date().toISOString();
-  const request_id = req.id || `req-${Date.now()}`;
-
+  
   console.log(`[${requestTimestamp}] ========== PROCESS REQUEST START ==========`);
   console.log(`[${requestTimestamp}] Request Details:`, {
     method: req.method,
@@ -347,18 +346,18 @@ exports.processImageAndPrompt = async (req, res) => {
     contentType: req.headers['content-type'],
     contentLength: req.headers['content-length'] ? `${(parseInt(req.headers['content-length']) / 1024).toFixed(2)} KB` : 'N/A'
   });
-
+  
   try {
     if (!OPENAI_API_KEY || !IDEOGRAM_API_KEY) {
       console.error(`[${requestTimestamp}] API keys validation failed`);
       console.error(`[${requestTimestamp}]   - OPENAI_API_KEY: ${OPENAI_API_KEY ? 'Present' : 'Missing'}`);
       console.error(`[${requestTimestamp}]   - IDEOGRAM_API_KEY: ${IDEOGRAM_API_KEY ? 'Present' : 'Missing'}`);
-      return res.status(500).json({ error: 'API keys not configured on server.', request_id });
+      return res.status(500).json({ error: 'API keys not configured on server.' });
     }
-
+    
     if (!req.file) {
       console.warn(`[${requestTimestamp}] Validation failed: No image file in request`);
-      return res.status(400).json({ error: 'No image uploaded.', request_id });
+      return res.status(400).json({ error: 'No image uploaded.' });
     }
     
     console.log(`[${requestTimestamp}] Image file received:`, {
@@ -382,7 +381,7 @@ exports.processImageAndPrompt = async (req, res) => {
     
     if (!prompt) {
       console.warn(`[${requestTimestamp}] Validation failed: Prompt is empty after sanitization`);
-      return res.status(400).json({ error: 'Prompt is required.', request_id });
+      return res.status(400).json({ error: 'Prompt is required.' });
     }
     
     // Determine creative mode (default to paid for backwards compatibility)
@@ -429,9 +428,8 @@ exports.processImageAndPrompt = async (req, res) => {
         statusCode = 429; // Too Many Requests
       }
       
-      return res.status(statusCode).json({
+      return res.status(statusCode).json({ 
         error: errorMessage,
-        request_id,
         details: err?.response?.data || err.message,
         type: err.response?.status === 429 ? 'quota_exceeded' : 'api_error'
       });
@@ -463,8 +461,7 @@ exports.processImageAndPrompt = async (req, res) => {
       console.log(`[${new Date().toISOString()}]   - Average Time per Request: ${(ideogramDuration / prompts.length).toFixed(0)}ms`);
       console.log(`[${new Date().toISOString()}]   - Results Array Length: ${results.length}`);
       
-      // Backward compatible: images = array of URL strings (same as old controller)
-      images = results.flat().filter((url) => typeof url === 'string' && url);
+      images = results.flat();
       console.log(`[${new Date().toISOString()}] Flattened images array`);
       console.log(`[${new Date().toISOString()}]   - Total Images Generated: ${images.length}`);
       console.log(`[${new Date().toISOString()}]   - Images per Prompt (avg): ${(images.length / prompts.length).toFixed(2)}`);
@@ -477,9 +474,9 @@ exports.processImageAndPrompt = async (req, res) => {
         console.error(`[${errorTimestamp}]   - Response Status: ${err.response.status}`);
         console.error(`[${errorTimestamp}]   - Response Data:`, JSON.stringify(err.response.data, null, 2));
       }
-      return res.status(502).json({ error: 'Error from Ideogram API.', request_id, details: err?.response?.data || err.message });
+      return res.status(502).json({ error: 'Error from Ideogram API.', details: err?.response?.data || err.message });
     }
-
+    
     const imageGenEndTime = Date.now();
     const imageGenDuration = imageGenEndTime - imageGenStartTime;
     const finalTimestamp = new Date().toISOString();
@@ -499,28 +496,20 @@ exports.processImageAndPrompt = async (req, res) => {
       imagesGenerated: images.length,
       success: true
     });
-    const route = req.originalUrl?.split('?')[0] || req.path || '/api/process';
-    console.log(`[${finalTimestamp}] Successfully processed request request_id=${request_id} user_id=${req.user?.id} route=${route}. Returning ${images.length} images.`);
-
-    // Success: backward-compatible shape { images, prompts } (images = URL strings, prompts = 20 prompts).
-    if (res.headersSent) {
-      console.error('BUG: headers already sent');
-      return;
-    }
-    return res.status(200).json({ images, prompts });
+    console.log(`[${finalTimestamp}] Successfully processed request. Returning ${images.length} images.`);
+    
+    res.json({ images, prompts });
   } catch (err) {
     const errorTimestamp = new Date().toISOString();
     const requestDuration = Date.now() - requestStartTime;
-    const errRequestId = req.id || `req-${Date.now()}`;
-    console.error(`[${errorTimestamp}] ========== PROCESS REQUEST ERROR ========== request_id=${errRequestId}`);
+    
+    console.error(`[${errorTimestamp}] ========== PROCESS REQUEST ERROR ==========`);
     console.error(`[${errorTimestamp}] Internal server error:`, err.message);
     console.error(`[${errorTimestamp}] Error Stack:`, err.stack);
     console.error(`[${errorTimestamp}] Request Duration: ${requestDuration}ms`);
-    if (res.headersSent) {
-      console.error('BUG: headers already sent');
-      return;
-    }
-    return res.status(500).json({ error: 'Internal server error.', request_id: errRequestId });
+    console.error(`[${errorTimestamp}] Error Type:`, err.constructor.name);
+    
+    res.status(500).json({ error: 'Internal server error.', details: err.message });
   }
 };
 
@@ -556,8 +545,7 @@ exports.serveCleanedImage = async (req, res) => {
   const imageUrl = req.query.url;
   
   if (!imageUrl) {
-    const requestId = req.id || `req-${Date.now()}`;
-    return res.status(400).json({ error: 'Image URL parameter required.', request_id: requestId });
+    return res.status(400).json({ error: 'Image URL parameter required.' });
   }
   
   console.log(`[${timestamp}] ========== SERVING CLEANED IMAGE ==========`);
@@ -590,9 +578,8 @@ exports.serveCleanedImage = async (req, res) => {
     });
     res.send(cleanedBuffer);
   } catch (err) {
-    const requestId = req.id || `req-${Date.now()}`;
-    console.error(`[${timestamp}] Error serving cleaned image request_id=${requestId}:`, err.message);
-    res.status(500).json({ error: 'Failed to process image.', request_id: requestId });
+    console.error(`[${timestamp}] Error serving cleaned image:`, err.message);
+    res.status(500).json({ error: 'Failed to process image.' });
   }
 };
 
@@ -647,8 +634,7 @@ exports.exportZipFromUrls = async (req, res) => {
     });
     res.send(content);
   } catch (err) {
-    const requestId = req.id || `req-${Date.now()}`;
-    console.error(`[${new Date().toISOString()}] Error exporting zip request_id=${requestId}:`, err.message);
-    res.status(500).json({ error: 'Failed to export zip.', request_id: requestId });
+    console.error(`[${new Date().toISOString()}] Error exporting zip:`, err.message);
+    res.status(500).json({ error: 'Failed to export zip.' });
   }
 }; 

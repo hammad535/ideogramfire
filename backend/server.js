@@ -4,7 +4,6 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
-const { requestId } = require('./middleware/requestId');
 
 // Verify environment variables are loaded
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -26,33 +25,14 @@ if (!OPENAI_API_KEY || !IDEOGRAM_API_KEY) {
 } else {
   console.log(`[${startupTimestamp}] ✓ All API keys loaded successfully`);
 }
-console.log(`[${startupTimestamp}]   - SERVE_FRONTEND: ${process.env.SERVE_FRONTEND === 'true' ? 'true (serving frontend/build)' : 'false (API-only)'}`);
 console.log(`[${startupTimestamp}] ===========================================`);
 
 const app = express();
 
-// Production: trust first proxy (X-Forwarded-* headers) when behind HTTPS/load balancer
-app.set('trust proxy', 1);
-
-// Request ID for error correlation (no secrets in response)
-app.use(requestId);
-
-// CORS: strict allowlist – dev: localhost:3001; prod: FRONTEND_ORIGIN (e.g. https://app.company.com)
-const allowedOrigins = ['http://localhost:3001'];
-if (process.env.FRONTEND_ORIGIN) allowedOrigins.push(process.env.FRONTEND_ORIGIN.trim());
-app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true); // same-origin or non-browser
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-    cb(null, false);
-  },
-  optionsSuccessStatus: 200
-}));
-
-// Body parsing with reasonable limit (upload size enforced by multer in routes)
-const jsonLimit = process.env.JSON_BODY_LIMIT || '1mb';
-app.use(express.json({ limit: jsonLimit }));
-app.use(express.urlencoded({ extended: true, limit: jsonLimit }));
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -60,53 +40,26 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve frontend only when SERVE_FRONTEND=true (e.g. local dev). On Render, use SERVE_FRONTEND=false for API-only.
-const serveFrontend = process.env.SERVE_FRONTEND === 'true';
-if (serveFrontend) {
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
-}
+// Serve static frontend
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-// API routes (always mounted)
+// API routes
 const apiRouter = require('./routes/api');
 app.use('/api', apiRouter);
 
-// Fallback: serve frontend SPA or API-only JSON
-if (serveFrontend) {
-  app.get('*', (req, res) => {
-    console.log(`[${new Date().toISOString()}] Serving frontend for ${req.url}`);
-    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-  });
-} else {
-  app.get('*', (req, res) => {
-    res.json({ status: 'ok', service: 'backend', hint: 'use /api/*' });
-  });
-}
+// Fallback to frontend for any other route
+app.get('*', (req, res) => {
+  console.log(`[${new Date().toISOString()}] Serving frontend for ${req.url}`);
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
 
-// Error handler: log full error server-side only; return safe JSON (no stack/secrets)
+// Error logging middleware
 app.use((err, req, res, next) => {
-  const requestId = req.id || `req-${Date.now()}`;
-  console.error(`[${new Date().toISOString()}] ERROR request_id=${requestId}`, err.message || err);
-  if (process.env.NODE_ENV !== 'production') console.error(err.stack);
-  // Payload too large (multer LIMIT_FILE_SIZE)
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({ error: 'File too large.', request_id: requestId });
-  }
-  res.status(500).json({ error: 'Internal server error.', request_id: requestId });
+  console.error(`[${new Date().toISOString()}] ERROR:`, err);
+  res.status(500).json({ error: 'Internal server error.' });
 });
 
 // Start server
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-});
-
-// Unhandled rejections/exceptions: log and exit so platform (Docker/App Platform) restarts the process
-function onUncaught(err) {
-  console.error('[FATAL] Uncaught exception:', err);
-  process.exit(1);
-}
-function onUnhandledRejection(reason, p) {
-  console.error('[FATAL] Unhandled rejection at:', p, 'reason:', reason);
-  process.exit(1);
-}
-process.on('uncaughtException', onUncaught);
-process.on('unhandledRejection', onUnhandledRejection); 
+}); 
