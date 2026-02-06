@@ -1,0 +1,10 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: radial-gradient(1200px circle at 20% 10%, #1e293b 0%, #0b1220 60%, #05070f 100%);
+  color: #e2e8f0;
+}
