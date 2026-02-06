@@ -258,11 +258,12 @@ function MainApp({ onLogout, getAuthHeaders }) {
       }
       
       console.log(`[${responseTimestamp}] [FRONTEND] Success Response Data:`, {
+        request_id: data.request_id,
+        count: data.count,
         imagesCount: data.images?.length || 0,
-        promptsCount: data.prompts?.length || 0,
-        imageUrls: data.images?.slice(0, 3).map(url => url.substring(0, 80) + '...') || []
+        imageUrls: data.images?.slice(0, 3).map(img => (typeof img === 'string' ? img : img?.url)?.substring(0, 80) + '...') || []
       });
-      
+
       setResults(data.images || []);
       // Prompts are logged in backend only, not stored in frontend
       
@@ -295,13 +296,14 @@ function MainApp({ onLogout, getAuthHeaders }) {
       console.log(`[${exportTimestamp}] [FRONTEND] Sending request to backend for ZIP export with metadata stripping...`);
       
       const authHeaders = await getAuthHeaders();
+      const urlsToExport = results.map((item) => (typeof item === 'string' ? item : item?.url)).filter(Boolean);
       const response = await fetch('/api/export-zip', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...authHeaders
         },
-        body: JSON.stringify({ urls: results })
+        body: JSON.stringify({ urls: urlsToExport })
       });
       
       if (!response.ok) {
@@ -604,7 +606,9 @@ function MainApp({ onLogout, getAuthHeaders }) {
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" sx={{ mb: 2 }}>Generated Images</Typography>
             <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' } }}>
-              {results.map((url, idx) => {
+              {results.map((item, idx) => {
+                const url = typeof item === 'string' ? item : (item && item.url) || '';
+                const itemId = typeof item === 'object' && item && item.id ? item.id : url || `img-${idx}`;
                 const renderTimestamp = new Date().toISOString();
                 if (idx === 0) {
                   console.log(`[${renderTimestamp}] [FRONTEND] ========== RENDERING IMAGES START ==========`);
@@ -628,7 +632,7 @@ function MainApp({ onLogout, getAuthHeaders }) {
                 }
 
                 return (
-                  <Card key={url} elevation={6} sx={{ overflow: 'hidden' }}>
+                  <Card key={itemId} elevation={6} sx={{ overflow: 'hidden' }}>
                     <Box
                       component="img"
                       src={url}

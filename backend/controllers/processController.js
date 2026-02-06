@@ -334,11 +334,12 @@ async function callIdeogram(prompt, promptIndex = null) {
   return imageUrls;
 }
 
-// Controller
+// Controller: /api/process and /api/generate – always respond with JSON only (no binary/stream).
 exports.processImageAndPrompt = async (req, res) => {
   const requestStartTime = Date.now();
   const requestTimestamp = new Date().toISOString();
-  
+  const request_id = req.id || `req-${Date.now()}`;
+
   console.log(`[${requestTimestamp}] ========== PROCESS REQUEST START ==========`);
   console.log(`[${requestTimestamp}] Request Details:`, {
     method: req.method,
@@ -346,18 +347,18 @@ exports.processImageAndPrompt = async (req, res) => {
     contentType: req.headers['content-type'],
     contentLength: req.headers['content-length'] ? `${(parseInt(req.headers['content-length']) / 1024).toFixed(2)} KB` : 'N/A'
   });
-  
+
   try {
     if (!OPENAI_API_KEY || !IDEOGRAM_API_KEY) {
       console.error(`[${requestTimestamp}] API keys validation failed`);
       console.error(`[${requestTimestamp}]   - OPENAI_API_KEY: ${OPENAI_API_KEY ? 'Present' : 'Missing'}`);
       console.error(`[${requestTimestamp}]   - IDEOGRAM_API_KEY: ${IDEOGRAM_API_KEY ? 'Present' : 'Missing'}`);
-      return res.status(500).json({ error: 'API keys not configured on server.' });
+      return res.status(500).json({ error: 'API keys not configured on server.', request_id });
     }
-    
+
     if (!req.file) {
       console.warn(`[${requestTimestamp}] Validation failed: No image file in request`);
-      return res.status(400).json({ error: 'No image uploaded.' });
+      return res.status(400).json({ error: 'No image uploaded.', request_id });
     }
     
     console.log(`[${requestTimestamp}] Image file received:`, {
@@ -381,7 +382,7 @@ exports.processImageAndPrompt = async (req, res) => {
     
     if (!prompt) {
       console.warn(`[${requestTimestamp}] Validation failed: Prompt is empty after sanitization`);
-      return res.status(400).json({ error: 'Prompt is required.' });
+      return res.status(400).json({ error: 'Prompt is required.', request_id });
     }
     
     // Determine creative mode (default to paid for backwards compatibility)
@@ -461,7 +462,17 @@ exports.processImageAndPrompt = async (req, res) => {
       console.log(`[${new Date().toISOString()}]   - Average Time per Request: ${(ideogramDuration / prompts.length).toFixed(0)}ms`);
       console.log(`[${new Date().toISOString()}]   - Results Array Length: ${results.length}`);
       
-      images = results.flat();
+      // Build structured list: each item has id, url (never binary), and prompt
+      const imageList = [];
+      results.forEach((urls, i) => {
+        const promptText = prompts[i] || '';
+        (urls || []).forEach((url, j) => {
+          if (typeof url === 'string' && url) {
+            imageList.push({ id: `img-${i}-${j}`, url, prompt: promptText });
+          }
+        });
+      });
+      images = imageList;
       console.log(`[${new Date().toISOString()}] Flattened images array`);
       console.log(`[${new Date().toISOString()}]   - Total Images Generated: ${images.length}`);
       console.log(`[${new Date().toISOString()}]   - Images per Prompt (avg): ${(images.length / prompts.length).toFixed(2)}`);
@@ -474,9 +485,9 @@ exports.processImageAndPrompt = async (req, res) => {
         console.error(`[${errorTimestamp}]   - Response Status: ${err.response.status}`);
         console.error(`[${errorTimestamp}]   - Response Data:`, JSON.stringify(err.response.data, null, 2));
       }
-      return res.status(502).json({ error: 'Error from Ideogram API.', details: err?.response?.data || err.message });
+      return res.status(502).json({ error: 'Error from Ideogram API.', request_id, details: err?.response?.data || err.message });
     }
-    
+
     const imageGenEndTime = Date.now();
     const imageGenDuration = imageGenEndTime - imageGenStartTime;
     const finalTimestamp = new Date().toISOString();
@@ -498,18 +509,20 @@ exports.processImageAndPrompt = async (req, res) => {
     });
     const route = req.originalUrl?.split('?')[0] || req.path || '/api/process';
     console.log(`[${finalTimestamp}] Successfully processed request user_id=${req.user?.id} route=${route}. Returning ${images.length} images.`);
-    
-    res.json({ images, prompts });
+
+    // Always JSON; never send binary or stream. Frontend expects { request_id, images, count }.
+    res.set('Content-Type', 'application/json');
+    res.json({ request_id, images, count: images.length });
   } catch (err) {
     const errorTimestamp = new Date().toISOString();
     const requestDuration = Date.now() - requestStartTime;
-    const requestId = req.id || `req-${Date.now()}`;
+    const errRequestId = req.id || `req-${Date.now()}`;
     // Log full error server-side only; never send stack or details to client
-    console.error(`[${errorTimestamp}] ========== PROCESS REQUEST ERROR ========== request_id=${requestId}`);
+    console.error(`[${errorTimestamp}] ========== PROCESS REQUEST ERROR ========== request_id=${errRequestId}`);
     console.error(`[${errorTimestamp}] Internal server error:`, err.message);
     console.error(`[${errorTimestamp}] Error Stack:`, err.stack);
     console.error(`[${errorTimestamp}] Request Duration: ${requestDuration}ms`);
-    res.status(500).json({ error: 'Internal server error.', request_id: requestId });
+    res.status(500).json({ error: 'Internal server error.', request_id: errRequestId });
   }
 };
 
