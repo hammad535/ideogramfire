@@ -511,9 +511,9 @@ exports.processImageAndPrompt = async (req, res) => {
     const route = req.originalUrl?.split('?')[0] || req.path || '/api/process';
     console.log(`[${finalTimestamp}] Successfully processed request user_id=${req.user?.id} route=${route}. Returning ${images.length} images.`);
 
-    // Single success path: always JSON; never binary/stream. Guard against double-send.
+    // Exactly one success path: JSON only; no binary/stream.
     if (res.headersSent) {
-      console.error('BUG: response already sent');
+      console.error('BUG: headers already sent');
       return;
     }
     return res.status(200).json({
@@ -526,13 +526,15 @@ exports.processImageAndPrompt = async (req, res) => {
     const errorTimestamp = new Date().toISOString();
     const requestDuration = Date.now() - requestStartTime;
     const errRequestId = req.id || `req-${Date.now()}`;
-    // Log full error server-side only; never send stack or details to client
     console.error(`[${errorTimestamp}] ========== PROCESS REQUEST ERROR ========== request_id=${errRequestId}`);
     console.error(`[${errorTimestamp}] Internal server error:`, err.message);
     console.error(`[${errorTimestamp}] Error Stack:`, err.stack);
     console.error(`[${errorTimestamp}] Request Duration: ${requestDuration}ms`);
-    if (res.headersSent) console.error('BUG: response already sent');
-    else res.status(500).json({ error: 'Internal server error.', request_id: errRequestId });
+    if (res.headersSent) {
+      console.error('BUG: headers already sent');
+      return;
+    }
+    return res.status(500).json({ error: 'Internal server error.', request_id: errRequestId });
   }
 };
 

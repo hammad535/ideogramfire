@@ -26,14 +26,19 @@ const upload = multer({
 
 // Multer LIMIT_FILE_SIZE is handled in server.js error middleware (413).
 
-// Shared handler for generation (used by both /process and /generate)
-const generationHandler = (req, res, next) => {
+// Shared handler for generation (used by both /process and /generate).
+// Must await the async controller so the response is sent before the request chain ends.
+const generationHandler = async (req, res, next) => {
   const route = req.path || req.originalUrl?.split('?')[0] || 'unknown';
   console.log(`[${new Date().toISOString()}] ${route} called user_id=${req.user?.id}`);
   if (req.file) {
     console.log(`Uploaded file: name=${req.file.originalname}, type=${req.file.mimetype}, size=${req.file.size}`);
   }
-  processImageAndPrompt(req, res, next);
+  try {
+    await processImageAndPrompt(req, res);
+  } catch (err) {
+    next(err);
+  }
 };
 
 // Protected routes: requireAuth → rateLimitByUser (per user_id)
