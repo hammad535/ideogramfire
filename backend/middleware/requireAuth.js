@@ -1,38 +1,37 @@
+// Validates Authorization Bearer token via Supabase; sets req.user on success, returns 401 JSON on fail.
 const { supabaseAdmin } = require('../supabaseAdmin');
 
+function generateRequestId() {
+  return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
 async function requireAuth(req, res, next) {
-  const route = req.path || req.originalUrl?.split('?')[0] || 'unknown';
-  const timestamp = new Date().toISOString();
-
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  const requestId = req.id || `req-${Date.now()}`;
-  const safe401 = (msg) => res.status(401).json({ error: msg || 'Unauthorized', request_id: requestId });
-  const safe503 = () => res.status(503).json({ error: 'Service unavailable', request_id: requestId });
-
-  if (!token) {
-    console.log(`[${timestamp}] requireAuth failure route=${route} reason=missing_token`);
-    return safe401('Missing or invalid token');
-  }
+  const request_id = req.headers['x-request-id'] || generateRequestId();
 
   if (!supabaseAdmin) {
-    console.log(`[${timestamp}] requireAuth failure route=${route} reason=supabase_not_configured`);
-    return safe503();
+    return res.status(501).json({ error: 'Auth not configured', request_id });
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized', request_id });
+  }
+
+  const token = authHeader.slice(7).trim();
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized', request_id });
   }
 
   try {
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !user) {
-      console.log(`[${timestamp}] requireAuth failure route=${route} reason=invalid_token`);
-      return safe401('Invalid or expired token');
+      return res.status(401).json({ error: 'Unauthorized', request_id });
     }
-    req.user = { id: user.id, email: user.email ?? null };
-    console.log(`[${timestamp}] requireAuth success user_id=${req.user.id} route=${route}`);
+    req.user = { id: user.id, email: user.email ?? undefined };
     next();
   } catch (err) {
-    console.error(`[${timestamp}] requireAuth error route=${route}`, err.message);
-    return safe401('Invalid or expired token');
+    console.error(`[${new Date().toISOString()}] requireAuth error:`, err.message);
+    return res.status(401).json({ error: 'Unauthorized', request_id });
   }
 }
 

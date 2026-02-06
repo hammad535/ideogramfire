@@ -1,14 +1,18 @@
+// Backend-only Supabase admin client for token verification.
+// Reads SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from process.env only. Never log or expose the service key.
 const { createClient } = require('@supabase/supabase-js');
+const path = require('path');
+
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  console.warn('[Backend] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing. Auth middleware will reject all requests.');
+let supabaseAdmin = null;
+if (supabaseUrl && serviceRoleKey) {
+  supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false }
+  });
 }
-
-const supabaseAdmin = (supabaseUrl && supabaseServiceRoleKey)
-  ? createClient(supabaseUrl, supabaseServiceRoleKey, { auth: { persistSession: false } })
-  : null;
 
 module.exports = { supabaseAdmin };

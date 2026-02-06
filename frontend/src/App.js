@@ -16,76 +16,16 @@ import {
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { getAuthHeaders } from './authHeaders';
+import { API_BASE } from './apiBase';
 import AuthScreen from './AuthScreen';
+
+function signOut() {
+  if (supabase) supabase.auth.signOut({ scope: 'local' });
+}
 
 function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setAuthLoading(false);
-      return;
-    }
-    const initSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('[Auth] getSession:', session ? session.user?.email : 'no session');
-        setUser(session?.user ?? null);
-      } catch (err) {
-        console.error('[Auth] getSession error:', err);
-        setUser(null);
-      } finally {
-        setAuthLoading(false);
-      }
-    };
-    initSession();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] onAuthStateChange:', event, session?.user?.email ?? 'signed out');
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    console.log('[Auth] Logging out');
-    try {
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-      if (error && error.code !== 'session_not_found' && !String(error.message || '').includes('session_not_found')) {
-        console.warn('[Auth] signOut warning:', error.message);
-      }
-    } catch (err) {
-      if (err?.code === 'session_not_found' || String(err?.message || '').includes('session_not_found')) return;
-      console.warn('[Auth] signOut warning:', err?.message || err);
-    }
-    setUser(null);
-  };
-
-  if (!isSupabaseConfigured) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
-        <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ maxWidth: 400 }}>
-          Supabase is not configured. Add <strong>REACT_APP_SUPABASE_URL</strong> and <strong>REACT_APP_SUPABASE_ANON_KEY</strong> to <strong>frontend/.env</strong> and restart the frontend server.
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (authLoading) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography color="text.secondary">Loading...</Typography>
-      </Box>
-    );
-  }
-  if (!user) {
-    return <AuthScreen />;
-  }
-
-  return <MainApp onLogout={handleLogout} getAuthHeaders={getAuthHeaders} />;
-}
-
-function MainApp({ onLogout, getAuthHeaders }) {
   const [creativeMode, setCreativeMode] = useState('paid');
   const [image, setImage] = useState(null);
   const [vertical, setVertical] = useState('');
@@ -94,6 +34,23 @@ function MainApp({ onLogout, getAuthHeaders }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState([]);
+
+  // Auth: on mount get session, then subscribe to changes. Strict gate: no user = login screen.
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthLoading(false);
+      return;
+    }
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    })();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const resetForModeChange = () => {
     setImage(null);
@@ -124,13 +81,10 @@ function MainApp({ onLogout, getAuthHeaders }) {
     const downloadTimestamp = new Date().toISOString();
     console.log(`[${downloadTimestamp}] [FRONTEND] Downloading image ${idx + 1}...`);
     try {
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch(`/api/clean-image?url=${encodeURIComponent(url)}`, { headers: { ...authHeaders } });
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${API_BASE}/api/clean-image?url=${encodeURIComponent(url)}`, { headers });
       if (!response.ok) {
-        if (response.status === 401) {
-          setError('Session expired, please log in again.');
-          return;
-        }
+        if (response.status === 401) signOut();
         throw new Error(`Failed to download image ${idx + 1}`);
       }
       const blob = await response.blob();
@@ -229,10 +183,10 @@ function MainApp({ onLogout, getAuthHeaders }) {
     console.log(`[${submitTimestamp}] [FRONTEND] Sending POST request to /api/process...`);
     
     try {
-      const authHeaders = await getAuthHeaders();
-      const res = await fetch('/api/process', {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/process`, {
         method: 'POST',
-        headers: { ...authHeaders },
+        headers,
         body: formData
       });
       
@@ -252,18 +206,18 @@ function MainApp({ onLogout, getAuthHeaders }) {
       
       if (!res.ok) {
         console.error(`[${responseTimestamp}] [FRONTEND] API Error Response:`, data);
-        setError(res.status === 401 ? 'Session expired, please log in again.' : (data.error || 'An error occurred.'));
+        if (res.status === 401) signOut();
+        setError(data.error || 'An error occurred.');
         setLoading(false);
         return;
       }
       
       console.log(`[${responseTimestamp}] [FRONTEND] Success Response Data:`, {
-        request_id: data.request_id,
-        count: data.count,
         imagesCount: data.images?.length || 0,
-        imageUrls: data.images?.slice(0, 3).map(img => (typeof img === 'string' ? img : img?.url)?.substring(0, 80) + '...') || []
+        promptsCount: data.prompts?.length || 0,
+        imageUrls: data.images?.slice(0, 3).map(url => url.substring(0, 80) + '...') || []
       });
-
+      
       setResults(data.images || []);
       // Prompts are logged in backend only, not stored in frontend
       
@@ -296,23 +250,18 @@ function MainApp({ onLogout, getAuthHeaders }) {
       console.log(`[${exportTimestamp}] [FRONTEND] Sending request to backend for ZIP export with metadata stripping...`);
       
       const authHeaders = await getAuthHeaders();
-      const urlsToExport = results.map((item) => (typeof item === 'string' ? item : item?.url)).filter(Boolean);
-      const response = await fetch('/api/export-zip', {
+      const response = await fetch(`${API_BASE}/api/export-zip`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...authHeaders
         },
-        body: JSON.stringify({ urls: urlsToExport })
+        body: JSON.stringify({ urls: results })
       });
       
       if (!response.ok) {
-        if (response.status === 401) {
-          setError('Session expired, please log in again.');
-          setLoading(false);
-          return;
-        }
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        if (response.status === 401) signOut();
         throw new Error(errorData.error || 'Failed to export ZIP');
       }
       
@@ -360,6 +309,31 @@ function MainApp({ onLogout, getAuthHeaders }) {
   const buttonHover = isPaidMode ? 'rgb(120, 120, 74)' : '#0d9488';
   const secondaryColor = isPaidMode ? '#312e81' : '#134e4a';
 
+  // Strict login gating: config missing -> message; loading -> spinner; no user -> login; else generator
+  if (!isSupabaseConfigured) {
+    return (
+      <ThemeProvider theme={createTheme({ palette: { mode: 'dark' } })}>
+        <Container maxWidth="sm" sx={{ py: 4, textAlign: 'center' }}>
+          <Typography color="text.secondary">
+            Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in frontend/.env to enable login.
+          </Typography>
+        </Container>
+      </ThemeProvider>
+    );
+  }
+  if (authLoading) {
+    return (
+      <ThemeProvider theme={createTheme({ palette: { mode: 'dark' } })}>
+        <Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>
+          <Typography>Loading...</Typography>
+        </Container>
+      </ThemeProvider>
+    );
+  }
+  if (!user) {
+    return <AuthScreen />;
+  }
+
   const theme = createTheme({
     palette: {
       mode: 'dark',
@@ -384,6 +358,13 @@ function MainApp({ onLogout, getAuthHeaders }) {
         <Card elevation={12} className="form-card">
           <Box className="mode-card-header" sx={{ background: accentGradient, position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: 20, right: 24, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                size="small"
+                onClick={signOut}
+                sx={{ color: 'rgba(255,255,255,0.9)', textTransform: 'none', minWidth: 0, px: 1 }}
+              >
+                Log out
+              </Button>
               <ToggleButtonGroup
                 exclusive
                 value={creativeMode}
@@ -419,18 +400,6 @@ function MainApp({ onLogout, getAuthHeaders }) {
                 <ToggleButton value="paid">Paid Ads</ToggleButton>
                 <ToggleButton value="organic">Organic Content</ToggleButton>
               </ToggleButtonGroup>
-              <Button
-                size="small"
-                onClick={onLogout}
-                sx={{
-                  color: '#fff',
-                  borderColor: 'rgba(255,255,255,0.5)',
-                  '&:hover': { borderColor: 'rgba(255,255,255,0.9)' }
-                }}
-                variant="outlined"
-              >
-                Log out
-              </Button>
               {loading && (
                 <Typography
                   variant="caption"
@@ -606,9 +575,7 @@ function MainApp({ onLogout, getAuthHeaders }) {
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" sx={{ mb: 2 }}>Generated Images</Typography>
             <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' } }}>
-              {results.map((item, idx) => {
-                const url = typeof item === 'string' ? item : (item && item.url) || '';
-                const itemId = typeof item === 'object' && item && item.id ? item.id : url || `img-${idx}`;
+              {results.map((url, idx) => {
                 const renderTimestamp = new Date().toISOString();
                 if (idx === 0) {
                   console.log(`[${renderTimestamp}] [FRONTEND] ========== RENDERING IMAGES START ==========`);
@@ -632,7 +599,7 @@ function MainApp({ onLogout, getAuthHeaders }) {
                 }
 
                 return (
-                  <Card key={itemId} elevation={6} sx={{ overflow: 'hidden' }}>
+                  <Card key={url} elevation={6} sx={{ overflow: 'hidden' }}>
                     <Box
                       component="img"
                       src={url}

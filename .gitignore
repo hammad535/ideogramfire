@@ -1,7 +1,7 @@
 node_modules/
 .env
 frontend/node_modules/
-frontend/build/
+frontend/build/ 
 .env.*
 backend/.env
 frontend/.env
