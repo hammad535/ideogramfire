@@ -51,7 +51,11 @@ function App() {
       }
       setAuthLoading(false);
     })();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        return;
+      }
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
