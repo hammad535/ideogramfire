@@ -57,6 +57,18 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Reset generator state when user identity changes (e.g. logout then login as different user).
+  useEffect(() => {
+    if (!user?.id) return;
+    setCreativeMode('paid');
+    setImage(null);
+    setVertical('');
+    setAgeGroup('');
+    setAngle('');
+    setResults([]);
+    setError('');
+  }, [user?.id]);
+
   const resetForModeChange = () => {
     setImage(null);
     setVertical('');
@@ -364,7 +376,7 @@ function App() {
   });
 
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={theme} key={user?.id}>
       <Container maxWidth="md" sx={{ py: { xs: 3, md: 1 } }}>
         <Card elevation={12} className="form-card">
           <Box className="mode-card-header" sx={{ background: accentGradient, position: 'relative' }}>
