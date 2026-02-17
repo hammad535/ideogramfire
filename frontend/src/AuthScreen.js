@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import logo from './assets/logo.png';
+
+const DOMAIN_RESTRICTION_MESSAGE = 'Only @iefficient.com emails are allowed to sign up.';
+
+function isDomainRestrictionError(message) {
+  if (!message || typeof message !== 'string') return false;
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('database error saving new user') ||
+    lower.includes('only @iefficient.com emails are allowed') ||
+    lower.includes('not allowed') ||
+    lower.includes('failed to create user')
+  );
+}
 
 function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -37,7 +51,12 @@ function AuthScreen() {
         /* Auth state will update via onAuthStateChange in App.js */
       }
     } catch (err) {
-      setError(err.message || 'Login failed.');
+      const message = err.message || 'Login failed.';
+      if (isSignUp && isDomainRestrictionError(message)) {
+        setError(DOMAIN_RESTRICTION_MESSAGE);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -59,6 +78,7 @@ function AuthScreen() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950">
       <div className="glass-card w-full max-w-md overflow-hidden">
         <div className="p-6 pb-4">
+          <img src={logo} alt="Ifficient" className="h-[38px] w-auto mb-3" />
           <h1 className="gradient-text-enhanced text-2xl mb-1">Ifficient PPC Image Generator</h1>
           <p className="text-slate-300 text-sm">Sign in to use the PPC image generator</p>
         </div>

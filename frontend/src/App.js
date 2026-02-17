@@ -6,6 +6,7 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { getAuthHeaders } from './authHeaders';
 import { API_BASE } from './apiBase';
 import AuthScreen from './AuthScreen';
+import logo from './assets/logo.png';
 
 function signOut() {
   if (supabase) supabase.auth.signOut({ scope: 'local' });
@@ -344,48 +345,55 @@ function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 py-4 md:py-2" key={user?.id}>
       <div className="max-w-3xl mx-auto px-4 py-3 md:py-1">
         <div className="glass-card form-card overflow-hidden">
-          <div className="mode-card-header generator-header relative">
-            <div className="absolute top-5 right-6 flex items-center gap-2 flex-wrap justify-end">
-              <button
-                type="button"
-                onClick={signOut}
-                className="text-[var(--text-primary)] text-sm font-medium opacity-90 hover:opacity-100 transition px-2 py-1 rounded-lg hover:bg-white/10"
-              >
-                Log out
-              </button>
-              <div
-                className="inline-flex rounded-full border border-[var(--glass-border)] glass-morphism p-0.5"
-                style={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}
-              >
+          <div className="mode-card-header generator-header">
+            <div className="app-header-row">
+              <div className="app-header-left">
+                <img src={logo} alt="Ifficient" className="app-header-logo" />
+                <div className="min-w-0">
+                  <h1 className="gradient-text-enhanced gradient-title text-xl md:text-2xl">{headerTitle}</h1>
+                  <p className="text-[var(--text-secondary)] text-sm mt-0.5">{modeIndicator}</p>
+                </div>
+              </div>
+              <div className="app-header-right">
+                <div
+                  className="inline-flex rounded-full border border-[var(--glass-border)] glass-morphism p-0.5"
+                  style={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleModeToggle(null, 'paid')}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
+                      creativeMode === 'paid'
+                        ? 'toggle-pill-selected'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10'
+                    }`}
+                  >
+                    Paid Ads
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleModeToggle(null, 'organic')}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
+                      creativeMode === 'organic'
+                        ? 'toggle-pill-selected'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10'
+                    }`}
+                  >
+                    Organic Content
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => handleModeToggle(null, 'paid')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
-                    creativeMode === 'paid'
-                      ? 'toggle-pill-selected'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10'
-                  }`}
+                  onClick={signOut}
+                  className="text-[var(--text-primary)] text-sm font-medium opacity-90 hover:opacity-100 transition px-3 py-1.5 rounded-lg hover:bg-white/10 flex-shrink-0"
                 >
-                  Paid Ads
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleModeToggle(null, 'organic')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
-                    creativeMode === 'organic'
-                      ? 'toggle-pill-selected'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10'
-                  }`}
-                >
-                  Organic Content
+                  Log out
                 </button>
               </div>
-              {loading && (
-                <span className="block w-full text-right text-[var(--text-secondary)] text-xs mt-1">Processing… please wait</span>
-              )}
             </div>
-            <h1 className="gradient-text-enhanced gradient-title text-2xl md:text-3xl">{headerTitle}</h1>
-            <p className="text-[var(--text-secondary)] text-sm mt-1">{modeIndicator}</p>
+            {loading && (
+              <p className="text-[var(--text-secondary)] text-xs mt-3 text-right">Processing… please wait</p>
+            )}
           </div>
           <div className="p-6 md:p-8">
             <form onSubmit={handleSubmit} className="grid gap-4">

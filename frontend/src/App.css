@@ -18,6 +18,36 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* App header row: flex layout so Log out and title don't overlap */
+.app-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.app-header-logo {
+  height: 38px;
+  width: auto;
+  flex-shrink: 0;
+}
+
 /* Toggle pill selected: blue→purple→pink gradient to match login */
 .toggle-pill-selected {
   color: #fff;
