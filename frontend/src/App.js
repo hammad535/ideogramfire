@@ -307,7 +307,7 @@ function App() {
   const anglePlaceholder = isPaidMode
     ? 'e.g. money back, savings, government incentives, health subsidies, etc. (optional)'
     : 'e.g. curiosity, relatability, personal story, myth-busting, etc. (optional)';
-  const headerTitle = 'Ifficient PPC Image Generator';
+  const headerTitle = 'PPC Image Generator';
   const modeIndicator = isPaidMode
     ? 'Mode: Paid Ads · Conversion-focused'
     : 'Mode: Organic Content · Engagement-first';
@@ -348,7 +348,7 @@ function App() {
           <div className="mode-card-header generator-header">
             <div className="app-header-row">
               <div className="app-header-left">
-                <img src={logo} alt="Ifficient" className="app-header-logo" />
+                <img src={logo} alt="Ifficient" className="app-header-logo flex-shrink-0" />
                 <div className="min-w-0">
                   <h1 className="gradient-text-enhanced gradient-title text-xl md:text-2xl">{headerTitle}</h1>
                   <p className="text-[var(--text-secondary)] text-sm mt-0.5">{modeIndicator}</p>
