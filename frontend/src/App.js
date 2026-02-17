@@ -318,7 +318,7 @@ function App() {
   const anglePlaceholder = isPaidMode
     ? 'e.g. money back, savings, government incentives, health subsidies, etc. (optional)'
     : 'e.g. curiosity, relatability, personal story, myth-busting, etc. (optional)';
-  const headerTitle = isPaidMode ? 'Paid Ads Generator' : 'Organic Content Generator';
+  const headerTitle = 'Ifficient PPC Image Generator';
   const modeIndicator = isPaidMode
     ? 'Mode: Paid Ads · Conversion-focused'
     : 'Mode: Organic Content · Engagement-first';
