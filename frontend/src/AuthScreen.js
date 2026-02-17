@@ -77,10 +77,10 @@ function AuthScreen({ onAuthenticated }) {
         <Card elevation={12} sx={{ overflow: 'hidden' }}>
           <Box sx={{ background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #22c55e 100%)', p: 2.5 }}>
             <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>
-              IdeogramFIRE
+              Ifficient PPC Image Generator
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
-              Sign in to use the creative engine
+              Sign in to use the PPC image generator
             </Typography>
           </Box>
           <CardContent sx={{ p: 3 }}>
