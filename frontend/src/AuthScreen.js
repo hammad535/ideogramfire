@@ -23,7 +23,7 @@ function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
-    document.title = 'Ifficient PPC Image Generator';
+    document.title = 'PPC Image Generator';
   }, []);
 
   const handleSubmit = async (e) => {
