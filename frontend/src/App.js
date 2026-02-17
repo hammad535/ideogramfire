@@ -2,18 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import promptGuide from './PromptFORGPT';
 import { saveAs } from 'file-saver';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Container,
-  ToggleButton,
-  ToggleButtonGroup,
-  TextField,
-  Typography
-} from '@mui/material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { getAuthHeaders } from './authHeaders';
 import { API_BASE } from './apiBase';
@@ -325,283 +313,151 @@ function App() {
   const accentGradient = isPaidMode
     ? 'linear-gradient(135deg,rgb(120, 136, 67) 0%,rgb(142, 161, 67) 50%,rgb(235, 235, 32) 100%)'
     : 'linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #22c55e 100%)';
-  const accentColor = isPaidMode ? '#6366f1' : '#0f766e';
-  const buttonColor = isPaidMode ? 'rgb(152, 151, 94)' : '#0f766e';
-  const buttonHover = isPaidMode ? 'rgb(120, 120, 74)' : '#0d9488';
-  const secondaryColor = isPaidMode ? '#312e81' : '#134e4a';
 
   // Hard gate: never render generator unless Supabase is configured and user is authenticated.
   const isProductionRender = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
   if (!isSupabaseConfigured) {
     return (
-      <ThemeProvider theme={createTheme({ palette: { mode: 'dark' } })}>
-        <Container maxWidth="sm" sx={{ py: 4, textAlign: 'center' }}>
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+        <div className="glass-card max-w-md p-6 text-center">
           {isProductionRender && (
-            <Typography color="error" sx={{ mb: 2, fontWeight: 600 }}>
+            <p className="text-red-400 font-semibold mb-2">
               Production: Supabase not configured. Generator is blocked.
-            </Typography>
+            </p>
           )}
-          <Typography color="text.secondary">
+          <p className="text-[var(--text-secondary)]">
             Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in Render environment and rebuild.
-          </Typography>
-        </Container>
-      </ThemeProvider>
+          </p>
+        </div>
+      </div>
     );
   }
   if (authLoading) {
     return (
-      <ThemeProvider theme={createTheme({ palette: { mode: 'dark' } })}>
-        <Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>
-          <Typography>Loading...</Typography>
-        </Container>
-      </ThemeProvider>
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 flex items-center justify-center">
+        <p className="text-[var(--text-primary)]">Loading...</p>
+      </div>
     );
   }
   if (!user) {
     return <AuthScreen />;
   }
 
-  const theme = createTheme({
-    palette: {
-      mode: 'dark',
-      primary: { main: accentColor },
-      secondary: { main: secondaryColor },
-      background: { default: '#0b1220', paper: '#0f172a' },
-      text: { primary: '#e2e8f0', secondary: '#94a3b8' }
-    },
-    typography: {
-      fontFamily: '"Inter", "system-ui", "Segoe UI", sans-serif',
-      h3: { fontWeight: 700, letterSpacing: '-0.02em' },
-      h5: { fontWeight: 600 },
-      body1: { fontSize: '1rem' },
-      body2: { fontSize: '0.95rem' }
-    },
-    shape: { borderRadius: 16 }
-  });
-
   return (
-    <ThemeProvider theme={theme} key={user?.id}>
-      <Container maxWidth="md" sx={{ py: { xs: 3, md: 1 } }}>
-        <Card elevation={12} className="form-card">
-          <Box className="mode-card-header" sx={{ background: accentGradient, position: 'relative' }}>
-            <Box sx={{ position: 'absolute', top: 20, right: 24, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Button
-                size="small"
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 py-4 md:py-2" key={user?.id}>
+      <div className="max-w-3xl mx-auto px-4 py-3 md:py-1">
+        <div className="glass-card form-card overflow-hidden">
+          <div className="mode-card-header relative" style={{ background: accentGradient }}>
+            <div className="absolute top-5 right-6 flex items-center gap-2 flex-wrap justify-end">
+              <button
+                type="button"
                 onClick={signOut}
-                sx={{ color: 'rgba(255,255,255,0.9)', textTransform: 'none', minWidth: 0, px: 1 }}
+                className="text-white/90 text-sm font-medium hover:text-white transition px-2 py-1 rounded-lg hover:bg-white/10"
               >
                 Log out
-              </Button>
-              <ToggleButtonGroup
-                exclusive
-                value={creativeMode}
-                onChange={handleModeToggle}
-                size="small"
-                disabled={loading}
-                sx={{
-                  backgroundColor: 'rgba(15,23,42,0.35)',
-                  borderRadius: 999,
-                  border: '1px solid rgba(255,255,255,0.35)',
-                  backdropFilter: 'blur(6px)',
-                  opacity: loading ? 0.6 : 1,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  '& .MuiToggleButtonGroup-grouped': {
-                    border: 0,
-                    px: 2,
-                    py: 0.6,
-                    textTransform: 'none',
-                    color: 'rgba(255,255,255,0.7)',
-                    transition: 'all 200ms ease'
-                  },
-                  '& .MuiToggleButtonGroup-grouped.Mui-selected': {
-                    color: '#fff',
-                    backgroundColor: 'rgba(255,255,255,0.18)',
-                    boxShadow: '0 8px 16px rgba(15,23,42,0.28)'
-                  },
-                  '& .MuiToggleButtonGroup-grouped:hover': {
-                    color: '#fff',
-                    backgroundColor: 'rgba(255,255,255,0.12)'
-                  }
-                }}
+              </button>
+              <div
+                className="inline-flex rounded-full border border-white/35 bg-[rgba(15,23,42,0.35)] backdrop-blur-md p-0.5"
+                style={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}
               >
-                <ToggleButton value="paid">Paid Ads</ToggleButton>
-                <ToggleButton value="organic">Organic Content</ToggleButton>
-              </ToggleButtonGroup>
+                <button
+                  type="button"
+                  onClick={() => handleModeToggle(null, 'paid')}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
+                    creativeMode === 'paid'
+                      ? 'text-white bg-white/20 shadow-lg'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Paid Ads
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeToggle(null, 'organic')}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
+                    creativeMode === 'organic'
+                      ? 'text-white bg-white/20 shadow-lg'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Organic Content
+                </button>
+              </div>
               {loading && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'block',
-                    mt: 0.8,
-                    color: 'rgba(255,255,255,0.75)',
-                    textAlign: 'right'
-                  }}
-                >
-                  Processing… please wait
-                </Typography>
+                <span className="block w-full text-right text-white/75 text-xs mt-1">Processing… please wait</span>
               )}
-            </Box>
-            <Typography variant="h4" className="gradient-title">{headerTitle}</Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: 'rgba(255,255,255,0.78)',
-                mt: 0.5
-              }}
-            >
-              {modeIndicator}
-            </Typography>
-          </Box>
-          <CardContent sx={{ p: { xs: 2.5, md: 3.25 } }}>
-            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2 }}>
-              <Button
-                variant="outlined"
-                component="label"
-                sx={{
-                  textTransform: 'none',
-                  borderStyle: 'dashed',
-                  borderWidth: 2,
-                  borderColor: 'rgba(148,163,184,0.55)',
-                  py: 2,
-                  px: 2.4,
-                  justifyContent: 'flex-start',
-                  textAlign: 'left',
-                  transition: 'all 200ms ease',
-                  backgroundColor: 'rgba(15,23,42,0.35)',
-                  '&:hover': {
-                    borderColor: 'rgba(255,255,255,0.85)',
-                    backgroundColor: 'rgba(15,23,42,0.55)'
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            </div>
+            <h1 className="gradient-text-enhanced gradient-title text-2xl md:text-3xl">{headerTitle}</h1>
+            <p className="text-white/80 text-sm mt-1">{modeIndicator}</p>
+          </div>
+          <div className="p-6 md:p-8">
+            <form onSubmit={handleSubmit} className="grid gap-4">
+              <label className="block cursor-pointer">
+                <span className="flex flex-col gap-1.5 p-4 rounded-xl border-2 border-dashed border-slate-400/55 bg-[rgba(15,23,42,0.35)] hover:border-white/85 hover:bg-[rgba(15,23,42,0.55)] transition-all duration-200 text-left">
+                  <span className="font-semibold text-[var(--text-primary)]">
                     {image ? `Image Selected: ${image.name}` : 'Drag & drop an image or click to upload'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  </span>
+                  <span className="text-sm text-[var(--text-secondary)]">
                     PNG, JPG, JPEG, GIF, WEBP · max 5MB
-                  </Typography>
-                </Box>
-                <input type="file" hidden accept="image/*" onChange={handleImageChange} />
-              </Button>
-              <TextField
-                label="Vertical"
-                value={vertical}
-                onChange={handleVerticalChange}
-                placeholder={verticalPlaceholder}
-                fullWidth
-                autoFocus
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  '& .MuiInputLabel-root': {
-                    color: 'rgba(226,232,240,0.85)'
-                  },
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(15,23,42,0.5)',
-                    transition: 'all 200ms ease',
-                    '&.Mui-focused fieldset': {
-                      borderColor: accentColor,
-                      boxShadow: `0 0 0 4px ${accentColor}33`
-                    }
-                  }
-                }}
-              />
-              <TextField
-                label="Angle"
-                value={angle}
-                onChange={handleAngleChange}
-                placeholder={anglePlaceholder}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  '& .MuiInputLabel-root': {
-                    color: 'rgba(226,232,240,0.85)'
-                  },
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(15,23,42,0.5)',
-                    transition: 'all 200ms ease',
-                    '&.Mui-focused fieldset': {
-                      borderColor: accentColor,
-                      boxShadow: `0 0 0 4px ${accentColor}33`
-                    }
-                  }
-                }}
-              />
-              <TextField
-                label="Age Group"
-                value={ageGroup}
-                onChange={handleAgeGroupChange}
-                placeholder="e.g. 18-35, all ages, etc."
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={{
-                  '& .MuiInputLabel-root': {
-                    color: 'rgba(226,232,240,0.85)'
-                  },
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(15,23,42,0.5)',
-                    transition: 'all 200ms ease',
-                    '&.Mui-focused fieldset': {
-                      borderColor: accentColor,
-                      boxShadow: `0 0 0 4px ${accentColor}33`
-                    }
-                  }
-                }}
-              />
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={loading}
-                  sx={{
-                    textTransform: 'none',
-                    px: 4,
-                    py: 1.2,
-                    backgroundColor: buttonColor,
-                    transition: 'all 200ms ease',
-                    '&:hover': {
-                      backgroundColor: buttonHover,
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 12px 24px rgba(15,23,42,0.35)'
-                    }
-                  }}
-                >
+                  </span>
+                </span>
+                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+              </label>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Vertical</label>
+                <input
+                  type="text"
+                  className="input-enhanced"
+                  value={vertical}
+                  onChange={handleVerticalChange}
+                  placeholder={verticalPlaceholder}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Angle</label>
+                <input
+                  type="text"
+                  className="input-enhanced"
+                  value={angle}
+                  onChange={handleAngleChange}
+                  placeholder={anglePlaceholder}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Age Group</label>
+                <input
+                  type="text"
+                  className="input-enhanced"
+                  value={ageGroup}
+                  onChange={handleAgeGroupChange}
+                  placeholder="e.g. 18-35, all ages, etc."
+                />
+              </div>
+              <div className="flex gap-3 flex-wrap">
+                <button type="submit" className="btn-primary" disabled={loading}>
                   {loading ? 'Generating...' : 'Generate'}
-                </Button>
+                </button>
                 {results.length > 0 && (
-                  <Button
+                  <button
                     type="button"
-                    variant="outlined"
                     onClick={handleExportAll}
-                    sx={{
-                      textTransform: 'none',
-                      px: 3,
-                      py: 1.2,
-                      transition: 'all 200ms ease'
-                    }}
+                    className="border border-white/30 rounded-xl px-4 py-2 text-sm font-medium text-[var(--text-primary)] bg-transparent hover:bg-white/10 transition-all duration-200"
                   >
                     Export All
-                  </Button>
+                  </button>
                 )}
-              </Box>
-            </Box>
-            {error && (
-              <Box className="error" sx={{ mt: 3 }}>
-                {error}
-              </Box>
-            )}
-            {loading && (
-              <Typography className="loading" sx={{ mt: 2 }}>
-                Processing...
-              </Typography>
-            )}
-          </CardContent>
-        </Card>
+              </div>
+            </form>
+            {error && <div className="error mt-4">{error}</div>}
+            {loading && <div className="loading mt-3">Processing...</div>}
+          </div>
+        </div>
 
         {results.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h5" sx={{ mb: 2 }}>Generated Images</Typography>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' } }}>
+          <div className="mt-8">
+            <h2 className="gradient-text-enhanced text-xl font-semibold mb-4">Generated Images</h2>
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
               {results.map((url, idx) => {
                 const renderTimestamp = new Date().toISOString();
                 if (idx === 0) {
@@ -626,37 +482,32 @@ function App() {
                 }
 
                 return (
-                  <Card key={url} elevation={6} sx={{ overflow: 'hidden' }}>
-                    <Box
-                      component="img"
+                  <div key={url} className="glass-card overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                    <img
                       src={url}
                       alt={`Generated ${idx + 1}`}
                       onLoad={handleImageLoad}
                       onError={handleImageError}
-                      sx={{ width: '100%', height: 200, objectFit: 'cover' }}
+                      className="w-full h-48 object-cover"
                     />
-                    <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Image {idx + 1}
-                      </Typography>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        className="download-btn"
+                    <div className="p-3 flex justify-between items-center">
+                      <span className="text-sm text-[var(--text-secondary)]">Image {idx + 1}</span>
+                      <button
+                        type="button"
+                        className="btn-primary download-btn text-sm py-1.5 px-3"
                         onClick={() => handleDownloadImage(url, idx)}
-                        sx={{ textTransform: 'none' }}
                       >
                         Download
-                      </Button>
-                    </CardContent>
-                  </Card>
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
-            </Box>
-          </Box>
+            </div>
+          </div>
         )}
-      </Container>
-    </ThemeProvider>
+      </div>
+    </div>
   );
 }
 

@@ -1,32 +1,16 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Container,
-  TextField,
-  Typography
-} from '@mui/material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
-const theme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: { main: '#14b8a6' },
-    background: { default: '#0b1220', paper: '#0f172a' },
-    text: { primary: '#e2e8f0', secondary: '#94a3b8' }
-  },
-  shape: { borderRadius: 16 }
-});
-
-function AuthScreen({ onAuthenticated }) {
+function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+
+  useEffect(() => {
+    document.title = 'Ifficient PPC Image Generator';
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,7 +33,9 @@ function AuthScreen({ onAuthenticated }) {
       }
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (signInError) throw signInError;
-      if (onAuthenticated) onAuthenticated(data.user);
+      if (data?.user) {
+        /* Auth state will update via onAuthStateChange in App.js */
+      }
     } catch (err) {
       setError(err.message || 'Login failed.');
     } finally {
@@ -59,77 +45,74 @@ function AuthScreen({ onAuthenticated }) {
 
   if (!isSupabaseConfigured) {
     return (
-      <ThemeProvider theme={theme}>
-        <Container maxWidth="sm" sx={{ py: 4 }}>
-          <Card elevation={12} sx={{ p: 3 }}>
-            <Typography color="error">
-              Auth is not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in frontend/.env
-            </Typography>
-          </Card>
-        </Container>
-      </ThemeProvider>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="glass-card max-w-md w-full p-6">
+          <p className="text-red-400 text-sm">
+            Auth is not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in frontend/.env
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <Container maxWidth="sm" sx={{ py: 4 }}>
-        <Card elevation={12} sx={{ overflow: 'hidden' }}>
-          <Box sx={{ background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #22c55e 100%)', p: 2.5 }}>
-            <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>
-              Ifficient PPC Image Generator
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
-              Sign in to use the PPC image generator
-            </Typography>
-          </Box>
-          <CardContent sx={{ p: 3 }}>
-            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Email"
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950">
+      <div className="glass-card w-full max-w-md overflow-hidden">
+        <div className="p-6 pb-4">
+          <h1 className="gradient-text-enhanced text-2xl mb-1">Ifficient PPC Image Generator</h1>
+          <p className="text-slate-300 text-sm">Sign in to use the PPC image generator</p>
+        </div>
+        <div className="p-6 pt-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label htmlFor="auth-email" className="block text-sm font-medium text-slate-300 mb-1.5">
+                Email
+              </label>
+              <input
+                id="auth-email"
                 type="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                fullWidth
+                className="input-enhanced"
                 autoComplete="email"
                 required
               />
-              <TextField
-                label="Password"
+            </div>
+            <div>
+              <label htmlFor="auth-password" className="block text-sm font-medium text-slate-300 mb-1.5">
+                Password
+              </label>
+              <input
+                id="auth-password"
                 type="password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                fullWidth
+                className="input-enhanced"
                 autoComplete={isSignUp ? 'new-password' : 'current-password'}
                 required
               />
-              {error && (
-                <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
-                  {error}
-                </Typography>
-              )}
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={loading}
-                sx={{ mt: 1, py: 1.2, textTransform: 'none' }}
-              >
-                {loading ? 'Please wait...' : (isSignUp ? 'Sign up' : 'Sign in')}
-              </Button>
-              <Button
-                type="button"
-                variant="text"
-                size="small"
-                onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
-                sx={{ textTransform: 'none' }}
-              >
-                {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      </Container>
-    </ThemeProvider>
+            </div>
+            {error && (
+              <p className="text-red-400 text-sm">{error}</p>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full py-3 mt-1"
+            >
+              {loading ? 'Please wait...' : (isSignUp ? 'Sign up' : 'Sign in')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
+              className="text-slate-400 hover:text-slate-300 text-sm text-center py-2 transition-colors"
+            >
+              {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }
 
