@@ -310,9 +310,6 @@ function App() {
   const modeIndicator = isPaidMode
     ? 'Mode: Paid Ads · Conversion-focused'
     : 'Mode: Organic Content · Engagement-first';
-  const accentGradient = isPaidMode
-    ? 'linear-gradient(135deg,rgb(120, 136, 67) 0%,rgb(142, 161, 67) 50%,rgb(235, 235, 32) 100%)'
-    : 'linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #22c55e 100%)';
 
   // Hard gate: never render generator unless Supabase is configured and user is authenticated.
   const isProductionRender = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
@@ -347,17 +344,17 @@ function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 py-4 md:py-2" key={user?.id}>
       <div className="max-w-3xl mx-auto px-4 py-3 md:py-1">
         <div className="glass-card form-card overflow-hidden">
-          <div className="mode-card-header relative" style={{ background: accentGradient }}>
+          <div className="mode-card-header generator-header relative">
             <div className="absolute top-5 right-6 flex items-center gap-2 flex-wrap justify-end">
               <button
                 type="button"
                 onClick={signOut}
-                className="text-white/90 text-sm font-medium hover:text-white transition px-2 py-1 rounded-lg hover:bg-white/10"
+                className="text-[var(--text-primary)] text-sm font-medium opacity-90 hover:opacity-100 transition px-2 py-1 rounded-lg hover:bg-white/10"
               >
                 Log out
               </button>
               <div
-                className="inline-flex rounded-full border border-white/35 bg-[rgba(15,23,42,0.35)] backdrop-blur-md p-0.5"
+                className="inline-flex rounded-full border border-[var(--glass-border)] glass-morphism p-0.5"
                 style={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}
               >
                 <button
@@ -365,8 +362,8 @@ function App() {
                   onClick={() => handleModeToggle(null, 'paid')}
                   className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
                     creativeMode === 'paid'
-                      ? 'text-white bg-white/20 shadow-lg'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                      ? 'toggle-pill-selected'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10'
                   }`}
                 >
                   Paid Ads
@@ -376,19 +373,19 @@ function App() {
                   onClick={() => handleModeToggle(null, 'organic')}
                   className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
                     creativeMode === 'organic'
-                      ? 'text-white bg-white/20 shadow-lg'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                      ? 'toggle-pill-selected'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10'
                   }`}
                 >
                   Organic Content
                 </button>
               </div>
               {loading && (
-                <span className="block w-full text-right text-white/75 text-xs mt-1">Processing… please wait</span>
+                <span className="block w-full text-right text-[var(--text-secondary)] text-xs mt-1">Processing… please wait</span>
               )}
             </div>
             <h1 className="gradient-text-enhanced gradient-title text-2xl md:text-3xl">{headerTitle}</h1>
-            <p className="text-white/80 text-sm mt-1">{modeIndicator}</p>
+            <p className="text-[var(--text-secondary)] text-sm mt-1">{modeIndicator}</p>
           </div>
           <div className="p-6 md:p-8">
             <form onSubmit={handleSubmit} className="grid gap-4">
