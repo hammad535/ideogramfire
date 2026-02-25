@@ -2,6 +2,7 @@
 // Load environment variables from root .env file
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
@@ -41,39 +42,27 @@ if (!OPENAI_API_KEY || !IDEOGRAM_API_KEY) {
 }
 console.log(`[${startupTimestamp}] ===========================================`);
 
+/*
+ * PART 5 — Optional: clear excessive localhost cookies (run in browser DevTools Console if 431 persists).
+ * Do NOT auto-delete in app code; use only for one-time cleanup.
+ *
+ * document.cookie.split(';').forEach(c => {
+ *   const name = c.split('=')[0].trim();
+ *   document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+ * });
+ * // For a specific origin:
+ * document.cookie.split(';').forEach(c => {
+ *   const name = c.split('=')[0].trim();
+ *   document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=localhost';
+ * });
+ */
+
 const app = express();
 
-// CORS: NODE_ENV separates dev/prod. Normalize origin (no trailing slash). Allow OPTIONS preflight.
-function normalizeOrigin(origin) {
-  if (!origin || typeof origin !== 'string') return null;
-  return origin.replace(/\/+$/, '');
-}
-const devOrigins = new Set([
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3002',
-  'http://localhost:5173',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
-  'http://127.0.0.1:3002',
-  'http://127.0.0.1:5173',
-]);
-const productionAllowedOrigins = new Set();
-if (FRONTEND_ORIGIN) productionAllowedOrigins.add(normalizeOrigin(FRONTEND_ORIGIN));
-
+// CORS: allow credentials without cookie bloat from strict origin rejection
+// (Reflect request origin; avoids duplicate/invalid cookies on localhost.)
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true); // Postman, curl, same-origin
-    const normalized = normalizeOrigin(origin);
-    if (isProduction) {
-      if (productionAllowedOrigins.has(normalized)) return cb(null, true);
-      console.error(`[CORS] Blocked origin (production): ${origin}`);
-      return cb(new Error('Not allowed by CORS'));
-    }
-    if (devOrigins.has(normalized)) return cb(null, true);
-    console.error(`[CORS] Blocked origin (development): ${origin}`);
-    return cb(new Error('Not allowed by CORS'));
-  },
+  origin: true,
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -81,6 +70,20 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// PART 3 — Log request header size when > 8KB (debugging; no sensitive values)
+const HEADER_SIZE_WARN_THRESHOLD = 8 * 1024;
+app.use((req, res, next) => {
+  const raw = req.rawHeaders;
+  if (raw && raw.length) {
+    let approx = 0;
+    for (let i = 0; i < raw.length; i++) approx += (raw[i] && raw[i].length) || 0;
+    if (approx > HEADER_SIZE_WARN_THRESHOLD) {
+      console.warn(`[${new Date().toISOString()}] Large headers: ~${Math.round(approx / 1024)}KB for ${req.method} ${req.url}`);
+    }
+  }
+  next();
+});
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -92,39 +95,79 @@ app.use((req, res, next) => {
 const apiRouter = require('./routes/api');
 app.use('/api', apiRouter);
 
-// SERVE_FRONTEND: only serve static + SPA fallback when true and build exists
-if (SERVE_FRONTEND && hasFrontendBuild) {
-  app.use(express.static(frontendBuildPath));
-  app.get('*', (req, res) => {
-    console.log(`[${new Date().toISOString()}] Serving frontend for ${req.url}`);
-    res.sendFile(frontendIndexPath);
-  });
-} else {
-  // API-only mode: GET / and unknown routes return JSON
-  app.get('/', (req, res) => {
-    res.json({ status: 'ok', mode: 'api-only' });
-  });
-  app.use((req, res) => {
-    res.status(404).json({ error: 'Not found', path: req.path });
-  });
+// Video segment routes (ESM, auth-protected)
+const { requireAuth } = require('./middleware/requireAuth');
+
+async function mountVideoSegmentRoutes() {
+  const { default: generateRoute } = await import('./api/videoSegments/generate.js');
+  const { default: generateContinuationRoute } = await import('./api/videoSegments/generateContinuation.js');
+  const { default: generatePlusRoute } = await import('./api/videoSegments/generate.plus.js');
+  const { default: generateNewContRoute } = await import('./api/videoSegments/generate.newcont.js');
+  app.use('/api/video-segments', requireAuth, generateRoute);
+  app.use('/api/video-segments', requireAuth, generateContinuationRoute);
+  app.use('/api/video-segments', requireAuth, generatePlusRoute);
+  app.use('/api/video-segments', requireAuth, generateNewContRoute);
+  console.log(`[${new Date().toISOString()}] Video segment routes mounted at /api/video-segments`);
 }
 
 // Error handler: CORS -> 403; others -> 500; log stack server-side only
 function generateRequestId() {
   return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
 }
-app.use((err, req, res, next) => {
-  console.error(`[${new Date().toISOString()}] ERROR:`, err.message || err);
-  if (err.stack) console.error(err.stack);
-  if (res.headersSent) return;
-  const request_id = req.headers['x-request-id'] || generateRequestId();
-  if (err.message === 'Not allowed by CORS') {
-    return res.status(403).json({ error: 'Not allowed by CORS', request_id });
-  }
-  res.status(500).json({ error: 'Internal server error.', request_id });
-});
 
-// Start server (Render sets PORT; listen on 0.0.0.0 for cloud)
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} (NODE_ENV=${process.env.NODE_ENV || 'undefined'})`);
-});
+// Mount video segment routes then static/404 and start server
+mountVideoSegmentRoutes()
+  .then(() => {
+    if (SERVE_FRONTEND && hasFrontendBuild) {
+      app.use(express.static(frontendBuildPath));
+      app.get('*', (req, res) => {
+        console.log(`[${new Date().toISOString()}] Serving frontend for ${req.url}`);
+        res.sendFile(frontendIndexPath);
+      });
+    } else {
+      app.get('/', (req, res) => {
+        res.json({ status: 'ok', mode: 'api-only' });
+      });
+      app.use((req, res) => {
+        res.status(404).json({ error: 'Not found', path: req.path });
+      });
+    }
+    app.use((err, req, res, next) => {
+      console.error(`[${new Date().toISOString()}] ERROR:`, err.message || err);
+      if (err.stack) console.error(err.stack);
+      if (res.headersSent) return;
+      const request_id = req.headers['x-request-id'] || generateRequestId();
+      if (err.message === 'Not allowed by CORS') {
+        return res.status(403).json({ error: 'Not allowed by CORS', request_id });
+      }
+      res.status(500).json({ error: 'Internal server error.', request_id });
+    });
+    // PART 1 — Allow larger headers (avoids 431). In-code: maxHeaderSize below.
+    // Safe CLI start: node --max-http-header-size=65536 server.js
+    const server = http.createServer(
+      { maxHeaderSize: 65536 },
+      app
+    );
+    let triedFallback = false;
+    function tryListen(port) {
+      server.listen(port, '0.0.0.0', () => {
+        console.log(`Server running on port ${port} (NODE_ENV=${process.env.NODE_ENV || 'undefined'})`);
+      });
+    }
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE' && !triedFallback) {
+        triedFallback = true;
+        const nextPort = (parseInt(PORT, 10) || 3000) + 1;
+        console.warn(`[${new Date().toISOString()}] Port ${PORT} in use, trying ${nextPort}...`);
+        tryListen(nextPort);
+      } else {
+        console.error(err);
+        process.exit(1);
+      }
+    });
+    tryListen(PORT);
+  })
+  .catch((err) => {
+    console.error('Failed to mount video segment routes:', err);
+    process.exit(1);
+  });

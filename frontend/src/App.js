@@ -6,6 +6,8 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { getAuthHeaders } from './authHeaders';
 import { API_BASE } from './apiBase';
 import AuthScreen from './AuthScreen';
+import GeneratorSelectionPage from './pages/GeneratorSelectionPage';
+import VideoAdsPage from './features/videoAds/VideoAdsPage';
 import logo from './assets/logo.png';
 
 function signOut() {
@@ -15,6 +17,7 @@ function signOut() {
 function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [route, setRoute] = useState(() => '#/select-generator');
   const [creativeMode, setCreativeMode] = useState('paid');
   const [image, setImage] = useState(null);
   const [vertical, setVertical] = useState('');
@@ -49,6 +52,21 @@ function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Hash-based routing for post-login: select-generator | image-ads | video-ads
+  useEffect(() => {
+    const onHash = () => setRoute(window.location.hash || '#/select-generator');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  // When showing login screen, clear hash so that after login we land on selection
+  useEffect(() => {
+    if (!user) {
+      window.location.hash = '#/select-generator';
+      setRoute('#/select-generator');
+    }
+  }, [user]);
 
   // Reset generator state when user identity changes (e.g. logout then login as different user).
   useEffect(() => {
@@ -341,7 +359,11 @@ function App() {
     return <AuthScreen />;
   }
 
-  return (
+  if (route === '#/video-ads') {
+    return <VideoAdsPage key="video-ads" />;
+  }
+  if (route === '#/image-ads') {
+    return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 py-4 md:py-2" key={user?.id}>
       <div className="max-w-3xl mx-auto px-4 py-3 md:py-1">
         <div className="glass-card form-card overflow-hidden">
@@ -514,6 +536,8 @@ function App() {
       </div>
     </div>
   );
+  }
+  return <GeneratorSelectionPage />;
 }
 
 export default App; 
