@@ -64,18 +64,21 @@ function AuthScreen() {
 
   if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="glass-card max-w-md w-full p-6">
-          <p className="text-red-400 text-sm">
-            Auth is not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in frontend/.env
-          </p>
+      <div className="page-shell flex items-center justify-center p-4">
+        <div className="main-container flex items-center justify-center">
+          <div className="glass-card max-w-md w-full p-6">
+            <p className="text-red-400 text-sm">
+              Auth is not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in frontend/.env
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950">
+    <div className="page-shell flex items-center justify-center p-4">
+      <div className="main-container flex items-center justify-center">
       <div className="glass-card w-full max-w-md overflow-hidden">
         <div className="p-6 pb-4">
           <div className="flex items-center gap-3 mb-3">
@@ -135,6 +138,7 @@ function AuthScreen() {
             </button>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -334,24 +334,28 @@ function App() {
   const isProductionRender = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
   if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
-        <div className="glass-card max-w-md p-6 text-center">
-          {isProductionRender && (
-            <p className="text-red-400 font-semibold mb-2">
-              Production: Supabase not configured. Generator is blocked.
+      <div className="page-shell flex items-center justify-center p-4">
+        <div className="main-container flex items-center justify-center">
+          <div className="glass-card max-w-md p-6 text-center">
+            {isProductionRender && (
+              <p className="text-red-400 font-semibold mb-2">
+                Production: Supabase not configured. Generator is blocked.
+              </p>
+            )}
+            <p className="text-[var(--text-secondary)]">
+              Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in Render environment and rebuild.
             </p>
-          )}
-          <p className="text-[var(--text-secondary)]">
-            Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in Render environment and rebuild.
-          </p>
+          </div>
         </div>
       </div>
     );
   }
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 flex items-center justify-center">
-        <p className="text-[var(--text-primary)]">Loading...</p>
+      <div className="page-shell flex items-center justify-center">
+        <div className="main-container flex items-center justify-center">
+          <p className="text-[var(--text-primary)]">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -364,8 +368,9 @@ function App() {
   }
   if (route === '#/image-ads') {
     return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 py-4 md:py-2" key={user?.id}>
-      <div className="max-w-3xl mx-auto px-4 py-3 md:py-1">
+    <div className="page-shell py-4 md:py-2" key={user?.id}>
+      <div className="main-container">
+      <div className="max-w-3xl mx-auto py-3 md:py-1">
         <div className="glass-card form-card overflow-hidden">
           <div className="mode-card-header generator-header">
             <div className="app-header-row">
@@ -407,7 +412,7 @@ function App() {
                 <button
                   type="button"
                   onClick={signOut}
-                  className="text-[var(--text-primary)] text-sm font-medium opacity-90 hover:opacity-100 transition px-3 py-1.5 rounded-lg hover:bg-white/10 flex-shrink-0"
+                  className="btn-header-action flex-shrink-0"
                 >
                   Log out
                 </button>
@@ -533,6 +538,7 @@ function App() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

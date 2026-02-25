@@ -63,44 +63,42 @@ function VideoAdsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 py-4 md:py-2">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="page-shell py-4 md:py-2">
+      <div className="main-container">
         <div className="glass-card form-card overflow-hidden">
-          <div className="mode-card-header generator-header flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <div className="mode-card-header generator-header app-header-row">
+            <div className="app-header-left">
               <img src={logo} alt="Ifficient" className="app-header-logo flex-shrink-0" />
-              <div>
+              <div className="min-w-0">
                 <h1 className="gradient-text-enhanced gradient-title text-xl md:text-2xl">Video Ads Segment Generator</h1>
                 <p className="text-[var(--text-secondary)] text-sm mt-0.5">Generate segments for video ads</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="app-header-right">
               <button
                 type="button"
                 onClick={() => { window.location.hash = '#/select-generator'; }}
-                className="text-[var(--text-primary)] text-sm font-medium opacity-90 hover:opacity-100 transition px-3 py-1.5 rounded-lg hover:bg-white/10"
+                className="btn-header-action"
               >
                 Back to selection
               </button>
               <button
                 type="button"
                 onClick={signOut}
-                className="text-[var(--text-primary)] text-sm font-medium opacity-90 hover:opacity-100 transition px-3 py-1.5 rounded-lg hover:bg-white/10"
+                className="btn-header-action"
               >
                 Log out
               </button>
             </div>
           </div>
 
-          <div className="p-4 border-b border-[var(--glass-border)] flex flex-wrap gap-2">
+          <div className="tabs-row">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => handleTabChange(tab.id)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  activeTab === tab.id ? 'toggle-pill-selected' : 'text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)]'
-                }`}
+                className={`tab-pill ${activeTab === tab.id ? 'tab-pill-active' : ''}`}
               >
                 {tab.label}
               </button>

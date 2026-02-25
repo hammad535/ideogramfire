@@ -1,3 +1,19 @@
+/* Section titles and dividers — consistent hierarchy */
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+.results-section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+  margin: 1.5rem 0;
+  border: none;
+}
+
 .mode-card,
 .form-card {
   border: 1px solid rgba(148, 163, 184, 0.12);

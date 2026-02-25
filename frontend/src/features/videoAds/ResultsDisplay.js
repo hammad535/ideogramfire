@@ -9,6 +9,7 @@ function ResultsDisplay({ results }) {
   const [editingSegmentIndex, setEditingSegmentIndex] = useState(null);
   const [localSegments, setLocalSegments] = useState([]);
   const [expandedJsonIndex, setExpandedJsonIndex] = useState(null);
+  const [copyFeedbackIndex, setCopyFeedbackIndex] = useState(null);
 
   useEffect(() => {
     setDisplayedSegments([]);
@@ -60,25 +61,35 @@ function ResultsDisplay({ results }) {
     URL.revokeObjectURL(url);
   };
 
+  const copySegmentJson = (segment, index) => {
+    const json = JSON.stringify(segment, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+      setCopyFeedbackIndex(index);
+      setTimeout(() => setCopyFeedbackIndex(null), 2000);
+    }).catch(() => {});
+  };
+
   const segList = displayedSegments.length ? displayedSegments : (localSegments.length ? localSegments : []);
 
   return (
     <div className="results-container standard-results">
-      <h2 className="results-main-title">Generated Segments</h2>
+      <h2 className="results-main-title section-title">Generated Segments</h2>
 
-      {/* Metadata — top */}
       <div className="results-metadata">
         <p><strong>Total Segments:</strong> {metadata?.totalSegments ?? segList.length}</p>
         <p><strong>Estimated Duration:</strong> {metadata?.estimatedDuration ?? segList.length * 8} seconds</p>
         <p><strong>Character ID:</strong> {metadata?.characterId ?? '—'}</p>
       </div>
 
-      {/* Generation Settings card — two-column groups */}
       {settings && (
-        <SettingsDisplay settings={settings} />
+        <>
+          <hr className="results-section-divider" />
+          <SettingsDisplay settings={settings} />
+        </>
       )}
 
-      {/* Segment cards */}
+      <hr className="results-section-divider" />
+      <h3 className="section-title">Segments</h3>
       <div className="segments-list">
         {segList.map((segment, index) => {
           const scriptText = segment?.action_timeline?.dialogue || 'N/A';
@@ -89,57 +100,44 @@ function ResultsDisplay({ results }) {
           const voiceMatching = segment?.character_description?.voice_matching ?? 'N/A';
           const isExpanded = expandedJsonIndex === index;
 
+          const segNum = segment?.segment_info?.segment_number ?? index + 1;
+          const durationStr = formatSegmentTime(segment, index);
+          const segmentForJson = localSegments[index] ?? segment;
+
           return (
-            <div key={index} className="segment-card">
-              <div className="segment-card-header">
-                <h3 className="segment-card-title">Segment {segment?.segment_info?.segment_number ?? index + 1}</h3>
+            <div key={index} className="segment-card card-base">
+              <div className="segment-card-header cardHeader">
+                <div className="segment-card-header-left">
+                  <h3 className="segment-card-title">Segment {segNum}</h3>
+                  <span className="pill pill-duration">{durationStr}</span>
+                  <span className="pill pill-words">{wordCount} words</span>
+                </div>
                 <div className="segment-card-actions">
-                  <button
-                    type="button"
-                    className="btn-segment-edit"
-                    onClick={() => setEditingSegmentIndex(index)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-segment-save"
-                    onClick={() => setEditingSegmentIndex(index)}
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-segment-download"
-                    onClick={() => downloadSegmentJson(localSegments[index] ?? segment, index)}
-                  >
-                    {formatSegmentTime(segment, index)}
-                  </button>
+                  <button type="button" className="btn-segment-edit" onClick={() => setEditingSegmentIndex(index)}>Edit</button>
+                  <button type="button" className="btn-segment-save" onClick={() => setEditingSegmentIndex(index)}>Save</button>
+                  <button type="button" className="btn-segment-download" onClick={() => downloadSegmentJson(segmentForJson, index)}>Download</button>
                 </div>
               </div>
 
               <div className="segment-card-body">
                 <div className="segment-detail segment-detail-script">
-                  <div className="segment-detail-script-heading">
-                    <span className="segment-detail-label">Script:</span>
-                    <span className="segment-script-badge">{wordCount} words</span>
-                  </div>
+                  <span className="segment-detail-label">Script</span>
                   <div className="segment-detail-content">{scriptText}</div>
                 </div>
                 <div className="segment-detail">
-                  <span className="segment-detail-label">Location:</span>
+                  <span className="segment-detail-label">Location</span>
                   <div className="segment-detail-content">{location}</div>
                 </div>
                 <div className="segment-detail">
-                  <span className="segment-detail-label">Camera:</span>
+                  <span className="segment-detail-label">Camera</span>
                   <div className="segment-detail-content">{typeof camera === 'string' ? camera : JSON.stringify(camera)}</div>
                 </div>
                 <div className="segment-detail">
-                  <span className="segment-detail-label">Character Status:</span>
+                  <span className="segment-detail-label">Character State</span>
                   <div className="segment-detail-content">{typeof characterState === 'string' ? characterState : JSON.stringify(characterState)}</div>
                 </div>
                 <div className="segment-detail">
-                  <span className="segment-detail-label">Voice Matching:</span>
+                  <span className="segment-detail-label">Voice Matching</span>
                   <div className="segment-detail-content">{typeof voiceMatching === 'string' ? voiceMatching : JSON.stringify(voiceMatching)}</div>
                 </div>
 
@@ -154,8 +152,17 @@ function ResultsDisplay({ results }) {
                     View Full JSON
                   </button>
                   {isExpanded && (
-                    <div className="segment-json-content">
-                      <pre className="segment-json-pre">{JSON.stringify(localSegments[index] ?? segment, null, 2)}</pre>
+                    <div className="json-panel segment-json-content">
+                      <div className="json-panel-toolbar">
+                        <button
+                          type="button"
+                          className="btn-copy-json btn-primary"
+                          onClick={() => copySegmentJson(segmentForJson, index)}
+                        >
+                          {copyFeedbackIndex === index ? 'Copied!' : 'Copy JSON'}
+                        </button>
+                      </div>
+                      <pre className="segment-json-pre">{JSON.stringify(segmentForJson, null, 2)}</pre>
                     </div>
                   )}
                 </div>

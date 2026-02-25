@@ -5,26 +5,110 @@
 html,
 body,
 #root {
+  min-height: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
 }
 
-/* Ifficient design system – dark glassmorphism */
+/* Ifficient design system – dark glassmorphism + brand blue outer */
 :root {
   --bg-base: #0b1220;
   --bg-paper: #0f172a;
+  --bg-container: #0b0f1a;
+  --brand-blue: #1e3a5f;
+  --brand-blue-mid: #1e293b;
   --glass-bg: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-border-strong: rgba(255, 255, 255, 0.08);
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
   --accent-from: #6366f1;
   --accent-to: #ec4899;
 }
 
+/* Full page: deep blue gradient (Ifficient brand), extends for entire scroll */
 body {
-  background: radial-gradient(1200px circle at 20% 10%, #1e293b 0%, var(--bg-base) 60%, #05070f 100%);
+  background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 35%, #0f172a 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* PageShell: full width, blue, min-height so blue shows for entire scroll */
+.page-shell {
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 35%, #0f172a 100%);
+}
+
+/* MainContainer: dark center column, subtle transparency, soft border, depth */
+.main-container {
+  width: 60%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(11, 15, 26, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-height: 100vh;
+  padding: 1.5rem 1.25rem;
+  border-left: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.4);
+}
+
+@media (min-width: 768px) {
+  .main-container {
+    padding: 2rem 2.5rem;
+  }
+}
+
+/* Goal B: Header actions and tabs */
+.btn-header-action {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-header-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.tabs-row {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.tab-pill {
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tab-pill:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+.tab-pill-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent-from) 0%, #8b5cf6 50%, var(--accent-to) 100%);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+.card-hover:hover {
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 /* Glass effect utilities */
@@ -35,12 +119,12 @@ body {
 }
 
 .glass-card {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(11, 15, 26, 0.95);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
-  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.6);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.3);
 }
 
 .glass-morphism {
@@ -82,16 +166,17 @@ body {
   cursor: not-allowed;
 }
 
-/* Enhanced input */
+/* Goal B: Enhanced input — consistent height, focus glow */
 .input-enhanced {
   width: 100%;
+  min-height: 44px;
   padding: 0.75rem 1rem;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(11, 15, 26, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.25);
   border-radius: 12px;
   color: var(--text-primary);
   font-size: 1rem;
-  transition: all 200ms ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-enhanced::placeholder {
@@ -99,13 +184,13 @@ body {
 }
 
 .input-enhanced:hover {
-  border-color: rgba(148, 163, 184, 0.5);
+  border-color: rgba(148, 163, 184, 0.4);
 }
 
 .input-enhanced:focus {
   outline: none;
   border-color: var(--accent-from);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
 }
 
 /* Light mode tokens (optional) */
@@ -191,12 +276,22 @@ body {
 .form-container textarea {
   width: 100%;
   max-width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 10px;
+  min-height: 44px;
+  padding: 0.625rem 0.875rem;
+  background: rgba(11, 15, 26, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
   color: var(--text-primary);
   font-size: 0.9375rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-container select:focus,
+.form-container input[type="text"]:focus,
+.form-container input[type="email"]:focus,
+.form-container textarea:focus {
+  outline: none;
+  border-color: var(--accent-from);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 .form-container textarea {
   min-height: 120px;
@@ -332,6 +427,9 @@ body {
 }
 
 /* Results — Standard Mode */
+.results-container {
+  padding: 0.25rem 0;
+}
 .standard-results .results-main-title {
   font-size: 1.35rem;
   font-weight: 700;
@@ -352,19 +450,21 @@ body {
   margin-right: 0.35rem;
 }
 
-/* Generation Settings card — two-column groups */
+/* Generation Settings card — clear separation from segments */
 .generation-settings-card {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(15, 23, 42, 0.55);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: 14px;
+  padding: 1.5rem 1.5rem;
   margin-bottom: 1.5rem;
 }
 .generation-settings-heading {
-  font-size: 1.1rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--glass-border);
 }
 .settings-group-title {
   font-size: 0.9rem;
@@ -393,17 +493,41 @@ body {
   color: var(--text-primary);
 }
 
-/* Segment cards */
+/* Segment cards — strong cards, more whitespace */
 .segments-list {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.75rem;
+}
+.card-base {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  background: rgba(15, 23, 42, 0.55);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.cardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.15);
+}
+.segment-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 .segment-card {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(15, 23, 42, 0.55);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 .segment-card-header {
   display: flex;
@@ -413,12 +537,30 @@ body {
   gap: 0.75rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.15);
 }
 .segment-card-title {
-  font-size: 1.1rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+}
+.pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.pill-duration {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+.pill-words {
+  background: rgba(139, 92, 246, 0.2);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.35);
 }
 .segment-card-actions {
   display: flex;
@@ -464,49 +606,43 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 .segment-card-body {
-  padding: 1rem 1.25rem;
+  padding: 1.25rem 1.5rem;
 }
 .segment-detail {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+.segment-detail:last-of-type {
+  margin-bottom: 0;
 }
 .segment-detail-label {
   display: block;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 .segment-detail-content {
   font-size: 0.9375rem;
   color: var(--text-primary);
-  line-height: 1.45;
+  line-height: 1.5;
 }
-.segment-detail-script-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.2rem;
-}
-.segment-script-badge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  background: rgba(239, 68, 68, 0.25);
-  color: #fca5a5;
+.segment-detail-script .segment-detail-content {
+  font-style: italic;
 }
 .segment-json-toggle {
-  margin-top: 1rem;
-  padding-top: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--glass-border);
 }
 .btn-view-json {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0;
   font-size: 0.875rem;
+  font-weight: 500;
   color: var(--accent-from);
   background: none;
   border: none;
@@ -518,22 +654,44 @@ body {
 .json-toggle-icon {
   font-size: 0.7rem;
 }
-.segment-json-content {
-  margin-top: 0.5rem;
-  max-height: 320px;
-  overflow: auto;
-  background: rgba(0, 0, 0, 0.25);
+/* JSON panel — distinct from card, scrollable, Copy button */
+.json-panel {
+  margin-top: 0.75rem;
+  background: rgba(7, 12, 22, 0.85);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+.json-panel-toolbar {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+.btn-copy-json {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
   border-radius: 8px;
-  padding: 1rem;
+}
+.segment-json-content {
+  margin-top: 0.75rem;
+}
+.json-panel .segment-json-pre {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .segment-json-pre {
   margin: 0;
-  font-family: ui-monospace, monospace;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  padding: 1rem;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+  font-size: 0.8125rem;
+  line-height: 1.45;
   color: var(--text-primary);
   white-space: pre-wrap;
-  word-break: break-all;
+  word-break: break-word;
 }
 
 /* Download section below results */
